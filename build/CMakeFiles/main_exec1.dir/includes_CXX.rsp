@@ -1,0 +1,1 @@
+-IC:/msys64/ucrt64/include/eigen3 -IC:/Users/H/AppData/Local/Programs/Python/Python312/include -isystem C:/Users/H/Desktop/cpp/MEEM/pybind11/include -isystem C:/Users/H/AppData/Local/Programs/Python/Python312/Include
