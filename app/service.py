@@ -2,7 +2,7 @@ import threading
 import time
 import sys
 import pandas as pd
-sys.path.append(r"C:/Users/H/Documents/cpp/MGA/cpp/build")  #for the .pyd
+sys.path.append(r"C:/Users/H/Documents/projects/Avarent/cpp/build")  #for the .pyd
 import mga_module
 import os
 from dotenv import load_dotenv

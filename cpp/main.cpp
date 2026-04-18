@@ -6,7 +6,7 @@ int main() //purely for testing real quick with c++ speed
 
     Engine engine;
 
-    std::ifstream file("C:/Users/H/Documents/cpp/v_output/etf_daily_log_returns.csv"); // C:/Users/H/Documents/cpp/v_output/etf_daily_log_returns_stable_period.csv or etf_daily_log_returns.csv or etf_daily_log_returns_shuffled.csv
+    std::ifstream file("C:/Users/H/Documents/projects/v_output/etf_daily_log_returns.csv"); // C:/Users/H/Documents/cpp/v_output/etf_daily_log_returns_stable_period.csv or etf_daily_log_returns.csv or etf_daily_log_returns_shuffled.csv
     if (!file.is_open())
     {
         std::cerr << "Could not open file\n";
