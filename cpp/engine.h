@@ -1,146 +1,146 @@
 #pragma once
 
-#include <string>
-#include <vector>
+#include "client_config.h"
+#include "lle.h"
+#include "rawprocessing.h"
+#include "robustnormalizer.h"
+#include "rawprocessing2.h"
+#include "stateanalysis.h"
 #include "utils.h"
-#include <iostream>
-#include <fstream>
-#include <cmath>
 #include <Eigen/Dense>
-#include <iomanip>
+#include <algorithm>
+#include <cmath>
 #include <complex>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <algorithm>
-#include <limits>
-#include "rawprocessing.h"
-#include "utils.h"
-#include <filesystem>
 #include <deque>
-#include <cstdio>
-#include "lle.h"
-#include "robustnormalizer.h"
-#include "stateanalysis.h"
-#include "rollingbinbuff.h"
-#include "MarkovRegimeModel.h"
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <string>
+#include <vector>
 
 #define DATA(x) std::cout << x << '\n';
 #define LOG(x) std::cerr << x << std::endl;
 
-struct sysOutput
-{
-    std::string regime;
-    std::string description;
-    std::string action;
-    double G, E, C;
-    std::vector<double> variable_k1_weights;
-    std::vector<std::string> variables;
-    std::vector<std::string> eigen_axis1_contributors, eigen_axis2_contributors, eigen_axis3_contributors;
-    std::vector<double> eigen_axis1_weights, eigen_axis2_weights, eigen_axis3_weights;
-    std::vector<double> dominant_eig_projection_coordinates_3dim; // xyz
-    std::vector<double> variable_weights;
-    double structural_stability;
-    double confidence; 
-    std::vector<std::string> top_next_regimes;
-    std::vector<double> top_next_probs;
-    double momentum_score;
-    double carry_score;
-    double vol_score;
-    double directional_bias;
-    double transition_risk;
-    double risk_posture;
-    double system_state_score;
+struct sysOutput {
+  // Decision outputs
+  std::string decision_regime;
+  std::string decision_regime_rationale;
+  std::string decision_action;
+  double regime_confidence;
+  int regime_age; // ticks since last regime switch
+  std::vector<std::string> model_input_variables;
+  std::vector<double> model_raw_input;
+  std::vector<double> model_pc1_weights_smoothed;
 };
 
-class Engine
-{
+class Engine {
 public:
-    // Engine(); // constructor, ill do some nice to have things later
-    //  Tunable parameters
-    const int SCORE_MAX = 3;  // threshold to confirm switch
-    const int SCORE_MIN = 0;  // lower bound //switching is too slow → lower SCORE_MAX || still a bit twitchy → increase SCORE_MAX or lower DECAY_STEP
-    const int DECAY_STEP = 1; // how fast score decreases
+  // Construct from a validated ClientConfig
+  explicit Engine(const ClientConfig &cfg);
 
-    // State (keep these persistent across calls)
-    bool regime_init = false;
-    CurRegime confirmed_regime;
-    CurRegime regime_candidate;
-    int regime_score = 0;
+  void ingest(const std::vector<double> &row); // feed new data
 
-    void ingest(const std::vector<double> &row); // feed new data
+  bool ready();
 
-    bool ready();
+  void setHeaders(std::vector<std::string> x);
 
-    void setHeaders(std::vector<std::string> x);
-    std::vector<std::string> getHeaders();
-    bool headers_are_set = false;
+  std::vector<std::string> getHeaders();
 
-    CurRegime updateRegime(CurRegime detected_regime);
+  CurRegime updateRegime(CurRegime detected_regime);
 
-    sysOutput getOutput();
+  sysOutput getOutput();
+
+  //tempo
+  std::vector<std::vector<double>> htts;
 
 private:
-    std::vector<std::string> headers;
-    // counters:
-    int iteration = 0; // keeps getting updated. one object lives in mem
+  // Config — declared first so subsequent members can reference it
+  ClientConfig config;
 
-    int window_index = 0;
+  // FIXED constants — not client-configurable
+  static constexpr int SCORE_MIN = 0;
 
-    std::deque<double> lle_regime;
-    int N = 100;
-    int lle_regime_stride = 10;
+  // Fixed strides — internal implementation detail
+  static constexpr int LLE_REGIME_STRIDE = 10;
+  static constexpr int REGIME_HISTORY_STRIDE = 1;
+  static constexpr int STABILITY_STRIDE = 1;
+  static constexpr int SWIRL_STEP = 50;
+  static constexpr int SWIRL_DT = 1;
 
-    std::deque<std::vector<double>> WINDOW;
+  // counters:
+  int iteration = 0;
+  int window_index = 0;
+  int regime_age_counter = 0;
 
-    AdaptiveOnlineNormalizer in;
+  // scores
+  int regime_score = 0;
 
-    int EFFECTIVE_BUFFER = 250, BUFFER_STRIDE = 20;
+  // inits
+  bool activated = false;
+  bool regime_tracking_init = false;
+  bool pc1_smoothed_init = false;
+  bool output_ready = false;
+  bool headers_are_set = false;
+  bool regime_init = false;
 
-    MatrixBuffer U_buff, Uvec_buff;
+  CurRegime confirmed_regime;
+  CurRegime regime_candidate;
 
-    bool activated = false;
+  std::vector<std::string> headers;
 
-    // G(t)
-    RobustScore ds_score{100, 30}, mos_score{100, 30}, ddelta_score{100, 30};
+  std::deque<double> lle_regime;
 
-    // E(t)
-    RobustScore lle_level_score{100, 30}, srs_score{100, 30}, lle_shift_score{100, 30};
+  std::deque<std::vector<double>> WINDOW;
 
-    // C(T)
-    RobustScore deff_delta_score{100, 30};
+  // Normalizer — initialized from config
+  AdaptiveOnlineNormalizer in{
+      config.normalizer_base_alpha, config.normalizer_min_alpha,
+      config.normalizer_decay, config.normalizer_update_interval};
 
-    // aux deltas
-    ScalarBuffer_ ddelta_buff, dde_delta_buff;
+  AdaptiveOnlineNormalizer2 in2;
 
-    // GEC rolling buffers
-    RollingBinBuffer G_bin{6}, E_bin{6}, C_bin{6};
+  // History buffer for macroscopic G and C deltas
+  std::deque<NormalizerState> state_history; //use this
 
-    EMA g{0.2}, e{0.2}, c{0.2}, t{0.2};
+  MatrixBuffer U_buff, Uvec_buff;
 
-    // Analysis
-    GECStates gec_states{6, 1};
+  // Test RobustScores for G2, E2, C2
+  RobustScore g2_score{config.robust_history, config.robust_warmup}, e2_score{config.robust_history, config.robust_warmup}, c2_score{config.robust_history, config.robust_warmup};
+  RobustScore e_score{config.robust_history, config.robust_warmup};
+  
+  EMA g2_ema{config.gec_ema_alpha}, e2_ema{config.gec_ema_alpha}, c2_ema{config.gec_ema_alpha};
+  EMA e_ema{config.gec_ema_alpha};
 
-    FactorTracker tracker;
+  // aux deltas
+  ScalarBuffer_ ddelta_buff, dde_delta_buff;
 
-    FactorTracker tracker_axis1;
-    FactorTracker tracker_axis2;
-    FactorTracker tracker_axis3;
+  // Analysis
+  FactorTracker tracker;
+  FactorTracker tracker_axis1;
+  FactorTracker tracker_axis2;
+  FactorTracker tracker_axis3;
 
-    domEigenvectors eigenvecTracker;
+  domEigenvectors eigenvecTracker;
 
-    std::deque<CurRegime> regimehistory;
-    int regimehistory_N = 8;
-    int regimehistory_stride = 1;
+  std::deque<CurRegime> regimehistory;
+  CurRegime previous_regime{CurRegime::Neutral};
 
-    MarkovRegimeModel markovmodel{16}; // num regimes
-    std::deque<CurRegime> markovregimehistory;
-    int markovregimehistory_N = 100;
-    int markovregimehistory_stride = 1;
+  std::deque<double> t_raw_smoothed;
 
-    std::deque<double> t_raw_smoothed;
-    int t_raw_smoothed_N = 30; // fast is 20, slow is 40
-    int t_raw_smoothed_stride = 1;
+  // Regime age tracking
+  CurRegime last_tracked_regime{};
 
-    sysOutput current_output;
-    bool output_ready = false;
+  std::unordered_map<int, std::vector<int>> regime_durations;
+
+  // PC1 weight smoothing (uses EMA to prevent instrument classification
+  // flicker)
+  Eigen::VectorXd pc1_smoothed;
+
+  sysOutput current_output;
 };
+

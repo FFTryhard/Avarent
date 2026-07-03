@@ -1,439 +1,380 @@
-#include "utils.h"
 #include "engine.h"
+#include "utils.h"
+#include <stdexcept>
+#include "rawprocessing2.h"
+#include "clusters.h"
 
-bool Engine::ready()
-{
-    return output_ready;
-} // can we output?
+// All tuning parameters now come from ClientConfig (stored as this->config).
+// See client_config.h for definitions, bounds, and profile defaults.
+
+Engine::Engine(const ClientConfig &cfg) : config(cfg) {}
+
+bool Engine::ready() { return output_ready; } // can we output?
 
 void Engine::setHeaders(std::vector<std::string> x)
 {
-    headers = x;
-    headers_are_set = true;
+  headers = x;
+  headers_are_set = true;
 }
 
 std::vector<std::string> Engine::getHeaders()
 {
-    if (headers_are_set)
-    {
-        return headers;
-    }
-    std::cerr << "HEADERS ARE NOT SET CANT RETURN\n";
-    return {};
+  if (headers_are_set)
+  {
+    return headers;
+  }
+  throw std::runtime_error("HEADERS ARE NOT SET CANT RETURN\n");
+  return {};
 }
 
 sysOutput Engine::getOutput()
 {
-    output_ready = false; // optional: reset after read
-    return current_output;
+  output_ready = false; // optional: reset after read
+  return current_output;
 } // current result
 
 void Engine::ingest(const std::vector<double> &row)
 {
-    if (!row.empty())
+  if (!row.empty())
+  {
+
+    std::vector<double> raw_vec = in.process(row);
+
+    if (checkForNaN(raw_vec))
     {
-
-        std::vector<double> raw_vec = in.process(row);
-
-        if (checkForNaN(raw_vec))
-        {
-            std::cerr << "Raw Vec Empty/Full of Zero's or NaN's!" << std::endl;
-            for (int i = 0; i < raw_vec.size(); i++)
-            {
-                std::cerr << "R[" << i << "]: " << raw_vec[i] << "\n";
-            }
-            std::cerr << "Index: " << iteration << std::endl;
-        }
-
-        WINDOW.push_back(raw_vec); // push until full
-
-        if (WINDOW.size() >= EFFECTIVE_BUFFER) // when full, analyze that block
-        {
-            std::cerr << "Iteration: " << iteration << '\n';
-
-            auto data_std_no_pca = deque_to_vector(WINDOW);
-            auto data_eigen_no_pca = dequeToEigenMatrix(WINDOW);
-
-            auto data_std = PCA(data_eigen_no_pca, 0.90);
-            auto data_eigen = vectorToEigenMatrix(data_std);
-
-            if (containsNaN(data_std_no_pca) || containsINF(data_std_no_pca))
-            {
-                LOG("Window has NaN/Inf values, bailing analysis.");
-                return;
-            }
-
-            auto LLE = largest_lyapunov_rosenstein(data_eigen, 1);
-
-            bool lle_shift_valid = false;
-            double z_lle = 0.0;
-
-            auto [boolean, r2] = stabilityCheckLLE(LLE);
-
-            if (boolean)
-            {
-                lle_regime.push_back(LLE.lle);
-
-                if (lle_regime.size() >= N)
-                {
-                    z_lle = splitMedianMadChange(deque_to_1vector(lle_regime)); // is it contracting or expanding or neutral. this will answer it
-                    lle_shift_valid = true;
-                    for (int i = 0; i < lle_regime_stride; i++)
-                    {
-                        lle_regime.pop_front();
-                    }
-                }
-            }
-            else
-            {
-                LOG("Window too unstable for accurate LLE estimation.");
-            }
-
-            auto trajectory = computeSwirlSeverityWindowed(data_eigen_no_pca, 1, 200, 50, 0.10); // was 200
-
-            auto [U, lambdas] = PCA_Eigenvectors(data_eigen_no_pca, 0.90); // needs to be pca on this window
-
-            double gap = lambdas[0] - lambdas[1];
-
-            double sum_eig = 0.0;
-
-            for (const auto &x : lambdas)
-            {
-                sum_eig = sum_eig + x;
-            }
-
-            if (U.rows() == 0 || U.cols() == 0)
-            {
-                std::cerr << "Skipping: empty U\n";
-                return; // default this
-            }
-
-            U_buff.add(U);
-            Uvec_buff.add(U.col(0));
-
-            double sin_normDS = 0.0;  // wedin
-            double sin_normMOS = 0.0; // wedin
-
-            bool dominance_ok_right_now = true;
-
-            if (gap / (sum_eig + 1e-11) < 1e-3) // above is fine
-            {                                   // should ass this in dd too
-                dominance_ok_right_now = false;
-            }
-
-            if (!(U_buff.has_prev) || !dominance_ok_right_now) // add dot product
-            {
-                // Not enough history yet
-                LOG("DS/MOS not stable due to eigenvalue gap");
-                sin_normDS = 0.0;
-                sin_normMOS = 0.0;
-            }
-            else
-            {
-                Eigen::MatrixXd U_overlap = U_buff.previous().transpose() * U_buff.current(); // UtU
-
-                sin_normMOS = wedin_theoremKGT1(U_overlap);                                                                // this never gets activated
-                sin_normDS = wedin_theoremK1(Eigen::VectorXd(Uvec_buff.current()), Eigen::VectorXd(Uvec_buff.previous())); // just needs dot product of vectors
-                // DSsinnorms.push_back(wedin_marginDS); // MOSsinnorms.push_back(wedin_marginMOS); histograms
-            }
-
-            double directional_dominance = std::log((lambdas[0] / (lambdas[1] + 1e-12)) + 1e-12);
-            int d = (int)lambdas.size();
-
-            // G(t)
-            double ds = sin_normDS;
-            double mos = sin_normMOS; // used for transitions, and periodic executions. 2 .. -2 then just transitions
-            double dd = directional_dominance;
-
-            // deltas
-            ddelta_buff.add(dd);
-            double ddelta = ddelta_buff.hasPrevious() ? (dd - ddelta_buff.previous()) : 0.0;
-
-            // E(t)
-            double srs = trajectory.empty() ? 0.0 : median(trajectory);
-            double lle = boolean ? LLE.lle : std::numeric_limits<double>::quiet_NaN(); // r2 there too
-            double lle_shift = z_lle;                                                  // handled above
-
-            // C(t)
-            double d_eff = effective_Rank(lambdas);
-
-            // deltas
-            dde_delta_buff.add(d_eff); // used for transitions and when to execute
-            double dde_delta = dde_delta_buff.hasPrevious() ? (d_eff - dde_delta_buff.previous()) : 0.0;
-
-            // NORMALZING
-            auto z_ds = ds_score.process(ds, RobustScore::Mode::Positive);
-            auto z_mos = mos_score.process(mos, RobustScore::Mode::Positive);
-            auto z_dd = ddelta_score.process(ddelta, RobustScore::Mode::Absolute);
-            auto z_de = deff_delta_score.process(dde_delta, RobustScore::Mode::Absolute);
-            auto z_srs = srs_score.process(srs, RobustScore::Mode::Positive);
-            auto z_lle_level = 0.0;
-            if (boolean && std::isfinite(lle))
-            {
-                auto out = lle_level_score.process(lle, RobustScore::Mode::Positive);
-                if (out.valid)
-                    z_lle_level = out.z;
-            }
-            auto z_lle_shift = 0.0;
-            if (boolean && lle_shift_valid)
-            {
-                z_lle_shift = std::max(0.0, std::min(8.0, z_lle));
-            }
-
-            // SCORING
-            double G = 0.0;
-            if (z_ds.valid && z_mos.valid && z_dd.valid)
-            {
-                G = 0.4 * z_ds.z + 0.4 * z_mos.z + 0.2 * z_dd.z;
-            }
-            g.update(G);
-            if (g.ready())
-                G = g.get();
-
-            double E = 0.0;
-            double s_lle = z_lle_level;
-            double s_lle_shift = z_lle_shift;
-            double s_srs = z_srs.valid ? z_srs.z : 0.0;
-
-            E = 0.35 * s_lle + 0.40 * s_lle_shift + 0.25 * s_srs;
-            e.update(E);
-            if (e.ready())
-                E = e.get();
-
-            double C = 0.0;
-            if (z_de.valid)
-            {
-                C = z_de.z;
-            }
-            c.update(C);
-            if (c.ready())
-                C = c.get();
-
-            G_bin.push(G);
-            E_bin.push(E);
-            C_bin.push(C);
-
-            int CURRENT_STATE_G = G_bin.exec();
-            int CURRENT_STATE_E = E_bin.exec();
-            int CURRENT_STATE_C = C_bin.exec();
-
-            gec_states.setG(CURRENT_STATE_G);
-            gec_states.setE(CURRENT_STATE_E);
-            gec_states.setC(CURRENT_STATE_C);
-
-            gec_states.update();
-
-            // PATTERN ANLYSIS
-            int raw_start = window_index * BUFFER_STRIDE;
-            int raw_center = raw_start + EFFECTIVE_BUFFER / 2;
-
-            int HOW_MANY_PATTERNS_DOMINATE = std::round(d_eff);
-
-            Patterns p;
-            p.eff = HOW_MANY_PATTERNS_DOMINATE;
-            p.eigenValues = lambdas;
-            p.eigenVectors = U;
-            p.headers = headers;
-
-            double T_raw = 0.35 * G + 0.40 * E + 0.25 * C;
-
-            t.update(T_raw);
-            double T_raw_smoothed = 0.0; // probably dont need T
-            if (t.ready())
-                T_raw_smoothed = t.get();
-
-            // dumb baselines
-
-            auto cov = covarianceMatrixx(data_std_no_pca);
-            double rolvol = mean(volatilityFromCov(cov));
-
-            double eigratio = eigenvalueDominance(data_eigen_no_pca);
-
-            double MAR = mean(eigenToStdVector(meanAbsoluteReturn(data_eigen_no_pca)));
-
-            //--------
-
-            std::cout << raw_center << " " << G << " " << raw_center << " " << E << " " << raw_center << " " << C << " " << raw_center << " " << T_raw_smoothed << " " << raw_center << " " << MAR << std::endl;
-
-            std::vector<double> coords = {G, E, C};
-            std::vector<double> coordsB = {eigratio, MAR, rolvol};
-
-            for (size_t i = 0; i < BUFFER_STRIDE; ++i)
-                WINDOW.pop_front();
-
-            std::cerr << "Window index: " << window_index << std::endl;
-            window_index++;
-
-            std::cerr << std::endl;
-            std::cerr << std::endl;
-
-            if (gec_states.isReady())
-            {
-                auto detected_regime = classifyRegime(gec_states);
-                auto current_regime_stable = updateRegime(detected_regime);
-
-                regimehistory.push_back(current_regime_stable);
-                double r_confidence = -1; // init
-
-                if (regimehistory.size() == regimehistory_N)
-                {
-                    r_confidence = temporalConsistency(regimehistory);
-                    for (size_t i = 0; i < regimehistory_stride; ++i)
-                        regimehistory.pop_front();
-                }
-
-                markovregimehistory.push_back(current_regime_stable);
-                std::vector<std::string> top_r = {"Initializing", "Initializing", "Initializing"};
-                std::vector<double> top_prob = {-1, -1, -1}; // set to three anyway
-
-                double transition_risk = 0.5;
-
-                if (markovregimehistory.size() == markovregimehistory_N)
-                {
-                    top_r.clear();
-                    top_prob.clear();
-
-                    markovmodel.update(deque_to_vector_template(markovregimehistory));
-                    auto result = markovmodel.predict(current_regime_stable); // markov property. From THIS regime, the three next are most likely now
-
-                    int c = toIndex(current_regime_stable);
-
-                    if (c >= 0 && c < result.P.size())
-                    {
-                        double row_sum = 0.0;
-                        for (double v : result.P[c])
-                            row_sum += v;
-
-                        if (row_sum > 0.0)
-                        {
-                            double stay_prob = result.P[c][c];
-                            transition_risk = 1.0 - stay_prob;
-                        }
-                    }
-
-                    for (auto &[regime, prob] : result.top_next)
-                    {
-                        top_r.push_back(enum_to_string_regime(regime));
-                        top_prob.push_back(prob);
-                    }
-
-                    for (size_t i = 0; i < markovregimehistory_stride; ++i)
-                        markovregimehistory.pop_front();
-                }
-
-                current_output.regime = enum_to_string_regime(current_regime_stable);
-                current_output.action = action(current_regime_stable);
-                current_output.description = interpret(current_regime_stable);
-                current_output.G = G;
-                current_output.E = E;
-                current_output.C = C;
-                current_output.variable_k1_weights = eigenToStdVector(p.eigenVectors.col(0));
-                current_output.variables = getHeaders();
-
-                auto [e1, e2, e3] = getTop3EigenVectors(p);
-
-                auto e1_topweights = getTopK(e1, tracker_axis1, 3);
-                auto e2_topweights = getTopK(e2, tracker_axis2, 3);
-                auto e3_topweights = getTopK(e3, tracker_axis3, 3);
-
-                auto [eigen_axis1_contributors, eigen_axis1_weights] = getAxisInfo(e1_topweights, headers); // x
-                auto [eigen_axis2_contributors, eigen_axis2_weights] = getAxisInfo(e2_topweights, headers); // y
-                auto [eigen_axis3_contributors, eigen_axis3_weights] = getAxisInfo(e3_topweights, headers); // z
-
-                current_output.eigen_axis1_contributors = eigen_axis1_contributors;
-                current_output.eigen_axis2_contributors = eigen_axis2_contributors;
-                current_output.eigen_axis3_contributors = eigen_axis3_contributors;
-                current_output.eigen_axis1_weights = eigen_axis1_weights;
-                current_output.eigen_axis2_weights = eigen_axis2_weights;
-                current_output.eigen_axis3_weights = eigen_axis3_weights;
-
-                current_output.dominant_eig_projection_coordinates_3dim = eigenStateProjections3dim(e1, e2, e3, toEigenVector(raw_vec)); // x y z
-
-                current_output.variable_weights = raw_vec;
-
-                current_output.confidence = r_confidence;
-
-                current_output.top_next_regimes = top_r;
-                current_output.top_next_probs = top_prob; // in order!;
-
-                t_raw_smoothed.push_back(T_raw_smoothed);
-                double regime_stability = -1; // init
-
-                if (t_raw_smoothed.size() == t_raw_smoothed_N)
-                {
-                    double instability = std::abs(derivativeOLS(deque_to_1vector(t_raw_smoothed), 1.0)); // dt
-
-                    double k = 5.0; // scale factor, tune
-                    regime_stability = std::exp(-k * instability);
-                    regime_stability = std::max(0.0, std::min(1.0, regime_stability));
-
-                    for (size_t i = 0; i < t_raw_smoothed_stride; ++i)
-                        t_raw_smoothed.pop_front();
-                }
-
-                current_output.structural_stability = regime_stability;
-
-                current_output.momentum_score = clamp_((1.0 - G) * regime_stability * (1.0 - C));
-                current_output.carry_score = clamp_(regime_stability * (1.0 - C));
-                current_output.vol_score = clamp_(C);
-
-                current_output.directional_bias = cosineSimilarity(toEigenVector(raw_vec), p.eigenVectors.col(0));
-
-                current_output.risk_posture = 1 - transition_risk;
-
-                current_output.transition_risk = transition_risk;
-
-                current_output.system_state_score = r_confidence * regime_stability* (1 - transition_risk) * (1 - C);
-
-                output_ready = true;
-            }
-
-            std::cerr << std::endl;
-            std::cerr << std::endl;
+      std::cerr << "Raw Vec Empty/Full of Zero's or NaN's!" << std::endl;
+      for (int i = 0; i < raw_vec.size(); i++)
+      {
+        std::cerr << "R[" << i << "]: " << raw_vec[i] << "\n";
+      }
+      std::cerr << "Index: " << iteration << std::endl;
+    }
+
+    //new
+    NormalizerState state = in2.process(row);
+
+    
+
+    // --- ONLINE G AND C (with k-spacing macro deltas) ---
+    state_history.push_back(state);
+    const int k_spacing = config.window_stride; // use stride (e.g. 20) as the macro window
+    if ((int)state_history.size() > k_spacing) {
+        state_history.pop_front();
+    }
+
+    double G2 = 0.0;
+    double C2 = 0.0;
+
+    if ((int)state_history.size() == k_spacing) {
+        const NormalizerState& past_state = state_history.front();
+        if (past_state.ready && state.ready) {
+            G2 = computeG(past_state.eigenvectors, state.eigenvectors, state.eigenvalues);
+            C2 = computeC(past_state.eigenvalues, state.eigenvalues);
         }
     }
-    iteration++;
+
+    auto z_g2 = g2_score.process(G2, RobustScore::Mode::Positive);
+    auto z_c2 = c2_score.process(C2, RobustScore::Mode::Signed);
+
+    double g2_norm = z_g2.valid ? z_g2.z : 0.0;
+    double c2_norm = z_c2.valid ? z_c2.z : 0.0;
+
+    g2_ema.update(g2_norm);
+    if (g2_ema.ready()) g2_norm = g2_ema.get();
+
+    c2_ema.update(c2_norm);
+    if (c2_ema.ready()) c2_norm = c2_ema.get();
+    // ----------------------
+
+    
+
+    /*
+
+    double G2 = computeG(in2.prevEigenvectors(), state.eigenvectors, state.eigenvalues);
+    double C2 = computeC(in2.prevEigenvalues(), state.eigenvalues);
+
+    g2_ema.update(G2);
+    if (g2_ema.ready()) G2 = g2_ema.get();
+
+    c2_ema.update(C2);
+    if (c2_ema.ready()) C2 = c2_ema.get();
+
+    auto z_g2 = g2_score.process(G2, RobustScore::Mode::Positive);
+    auto z_c2 = c2_score.process(C2, RobustScore::Mode::Absolute);
+
+    double g2_norm = z_g2.valid ? z_g2.z : 0.0;
+    double c2_norm = z_c2.valid ? z_c2.z : 0.0;
+
+    */
+
+    WINDOW.push_back(raw_vec); // push until full. was raw_vec
+
+    if ((int)WINDOW.size() >= config.window_size) // when full, analyze that block
+    {
+      std::cerr << "Iteration: " << iteration << '\n';
+
+      //DATA FOR LLE
+      Eigen::MatrixXd final_LLE_data_matrix;
+
+      auto data_std_no_pca = deque_to_vector(WINDOW);
+      auto data_eigen_no_pca = dequeToEigenMatrix(WINDOW);
+
+      final_LLE_data_matrix = data_eigen_no_pca;
+      if(getHeaders().size() >= 30){
+        auto pca_result = PCA_Full(data_eigen_no_pca, config.pca_variance_retained);
+        auto data_std = std::move(pca_result.projected);
+        auto data_eigen = vectorToEigenMatrix(data_std);
+        
+        final_LLE_data_matrix = data_eigen;
+      }
+
+      if (containsNaN(data_std_no_pca) || containsINF(data_std_no_pca)  || WINDOW.empty())
+      {
+        LOG("Window has NaN/Inf values, bailing analysis.");
+        return;
+      }
+      
+      // PATTERN ANLYSIS
+      int raw_start = iteration - config.window_size + 1;
+      int raw_center = raw_start + config.window_size / 2;
+
+      auto cov = covarianceMatrixx(data_std_no_pca);
+      
+      double rolvol = mean(volatilityFromCov(cov));
+      double eigratio = eigenvalueDominance(data_eigen_no_pca);
+      double MAR = mean(eigenToStdVector(meanAbsoluteReturn(data_eigen_no_pca)));
+
+      //--------
+
+      WINDOW.pop_front(); // Stride = 1 (rolling daily window)
+
+      std::cerr << std::endl;
+      std::cerr << std::endl;
+
+      double E2 = computeE(state.maha);
+
+      auto LLE = largest_lyapunov_rosenstein(final_LLE_data_matrix, 1);
+      double E = LLE.lle;
+
+      
+      
+      auto z_e2 = e2_score.process(E2, RobustScore::Mode::Positive);
+      auto z_e =  e_score.process(E, RobustScore::Mode::Positive);
+
+      double e2_norm = z_e2.valid ? z_e2.z : 0.0;
+      double e_norm = z_e.valid ? z_e.z : 0.0;
+
+      e2_ema.update(e2_norm);
+      if (e2_ema.ready()) e2_norm = e2_ema.get();
+
+      e_ema.update(e_norm);
+      if (e_ema.ready()) e_norm = e_ema.get();
+
+      
+
+      /*
+      e2_ema.update(E2);
+      if (e2_ema.ready()) E2 = e2_ema.get();
+
+      e_ema.update(E);
+      if (e_ema.ready()) E = e_ema.get();
+
+      auto z_e2 = e2_score.process(E2, RobustScore::Mode::Positive);
+      auto z_e =  e_score.process(E, RobustScore::Mode::Positive);
+
+      double e2_norm = z_e2.valid ? z_e2.z : 0.0;
+      double e_norm = z_e.valid ? z_e.z : 0.0;
+      */
+
+
+      //std::cout << raw_center << " " << g2_norm + 2.5 << " " << raw_center << " " << e_norm << " " << raw_center << " " << c2_norm << " " << std::endl;
+
+
+
+      htts.push_back({g2_norm, e_norm, c2_norm}); //if i smoothed it out too much, this should reveal clusters better
+
+      if (z_g2.valid && z_c2.valid && z_e.valid)
+      {
+        auto detected_regime = classifyRegime(g2_norm, e_norm, c2_norm);
+        if (!state.ready) detected_regime = CurRegime::Neutral;
+        auto current_regime_stable = updateRegime(detected_regime);
+
+        // Regime age tracking
+        if (!regime_tracking_init)
+        {
+          last_tracked_regime = current_regime_stable;
+          regime_tracking_init = true;
+          regime_age_counter = 0;
+        }
+        else if (current_regime_stable != last_tracked_regime)
+        {
+          regime_durations[static_cast<int>(last_tracked_regime)].push_back(
+              regime_age_counter);
+          regime_age_counter = 0;
+          last_tracked_regime = current_regime_stable;
+        }
+        else
+        {
+          regime_age_counter++;
+        }
+
+        previous_regime = current_regime_stable;
+
+
+
+        // --- PC1 signal classification ---
+        // 3.1: Smooth the PC1 weights using EMA (reuses GEC_EMA_ALPHA)
+        Eigen::VectorXd pc1_raw = state.eigenvectors.col(state.eigenvalues.size()-1);
+        if (!pc1_smoothed_init)
+        {
+          pc1_smoothed = pc1_raw;
+          pc1_smoothed_init = true;
+        }
+        else
+        {
+          // Eigenvectors have arbitrary signs. Align sign with the previous state before EMA
+          if (pc1_raw.dot(pc1_smoothed) < 0.0)
+          {
+            pc1_raw = -pc1_raw;
+          }
+          pc1_smoothed = config.gec_ema_alpha * pc1_raw +
+                         (1.0 - config.gec_ema_alpha) * pc1_smoothed;
+        }
+
+
+
+        // 3.2: Classify instruments by significance
+        double mean_abs_w = pc1_smoothed.cwiseAbs().mean();
+        double sig_threshold = config.pc1_significance * mean_abs_w;
+
+        struct PC1Instrument
+        {
+          int index;
+          double weight;
+        };
+
+        std::vector<PC1Instrument> reinforcing, antagonistic;
+        for (int i = 0; i < pc1_smoothed.size() && i < (int)headers.size();
+             ++i)
+        {
+          double w = pc1_smoothed(i);
+          if (std::abs(w) >= sig_threshold)
+          {
+            if (w > 0.0)
+              reinforcing.push_back({i, w});
+            else
+              antagonistic.push_back({i, w});
+          }
+        }
+
+        // 3.3: Select top 2 from each group by absolute weight
+        auto by_abs_weight = [](const PC1Instrument &a,
+                                const PC1Instrument &b)
+        {
+          return std::abs(a.weight) > std::abs(b.weight);
+        };
+        std::sort(reinforcing.begin(), reinforcing.end(), by_abs_weight);
+        std::sort(antagonistic.begin(), antagonistic.end(), by_abs_weight);
+
+        if (reinforcing.size() > 2)
+          reinforcing.resize(2);
+        if (antagonistic.size() > 2)
+          antagonistic.resize(2);
+
+        // 3.4: Generate description string
+        std::string rationale;
+        bool has_r = !reinforcing.empty();
+        bool has_a = !antagonistic.empty();
+
+        if (!has_r && !has_a)
+        {
+          rationale = "Market structure flat. No dominant dynamic detected.";
+        }
+        else if (has_r && has_a)
+        {
+          rationale = "Regime driven by " + headers[reinforcing[0].index];
+          if (reinforcing.size() > 1)
+            rationale += ", " + headers[reinforcing[1].index];
+          rationale += ". " + headers[antagonistic[0].index];
+          if (antagonistic.size() > 1)
+            rationale += ", " + headers[antagonistic[1].index];
+          rationale += " acting against dominant dynamic.";
+        }
+        else if (has_r && !has_a)
+        {
+          rationale = "Regime driven by " + headers[reinforcing[0].index];
+          if (reinforcing.size() > 1)
+            rationale += ", " + headers[reinforcing[1].index];
+          rationale += ". No significant antagonistic pressure.";
+        }
+        else
+        { // !has_r && has_a
+          rationale =
+              "Dominant dynamic unclear. " + headers[antagonistic[0].index];
+          if (antagonistic.size() > 1)
+            rationale += ", " + headers[antagonistic[1].index];
+          rationale += " acting against prevailing structure.";
+        }
+
+        current_output.decision_regime = enum_to_string_regime(current_regime_stable); 
+        current_output.decision_action = interpret(current_regime_stable); //maybe add explanation later
+        current_output.model_input_variables = getHeaders();
+        current_output.model_raw_input = raw_vec;
+        //current_output.regime_confidence = r_confidence; //based on coordinate location cossim and or distance? comes later
+        //current_output.decision_regime_rationale = re-anta; 
+        current_output.regime_age = regime_age_counter;
+        current_output.model_pc1_weights_smoothed = eigenToStdVector(pc1_smoothed);
+
+        output_ready = true;
+      }
+
+      std::cerr << std::endl;
+      std::cerr << std::endl;
+    }
+  }
+  iteration++;
 }
 
 CurRegime Engine::updateRegime(CurRegime detected_regime)
 {
-    // Initialization
-    if (!regime_init)
-    {
-        confirmed_regime = detected_regime;
-        regime_candidate = detected_regime;
-        regime_score = SCORE_MAX; // fully confident at start
-        regime_init = true;
-        return confirmed_regime;
-    }
+  // Initialization
+  if (!regime_init)
+  {
+    confirmed_regime = detected_regime;
+    regime_candidate = detected_regime;
+    regime_score = config.regime_confirm_count; // fully confident at start
+    regime_init = true;
+    return confirmed_regime;
+  }
 
-    // If matches current confirmed → reinforce stability
-    if (detected_regime == confirmed_regime)
+  // If matches current confirmed → reinforce stability
+  if (detected_regime == confirmed_regime)
+  {
+    regime_candidate = detected_regime;
+    regime_score = std::min(regime_score + 1, config.regime_confirm_count);
+  }
+  else
+  {
+    // If matches candidate → build confidence
+    if (detected_regime == regime_candidate)
     {
-        regime_candidate = detected_regime;
-        regime_score = std::min(regime_score + 1, SCORE_MAX);
+      regime_score = std::min(regime_score + 1, config.regime_confirm_count);
     }
     else
     {
-        // If matches candidate → build confidence
-        if (detected_regime == regime_candidate)
-        {
-            regime_score = std::min(regime_score + 1, SCORE_MAX);
-        }
-        else
-        {
-            // New challenger → decay instead of reset
-            regime_candidate = detected_regime;
-            regime_score = std::max(regime_score - DECAY_STEP, SCORE_MIN);
-        }
-
-        // Switch only when confidence is high enough
-        if (regime_score >= SCORE_MAX)
-        {
-            confirmed_regime = regime_candidate;
-            regime_score = SCORE_MAX / 2; // avoid instant flip back
-        }
+      // New challenger → decay instead of reset
+      regime_candidate = detected_regime;
+      regime_score =
+          std::max(regime_score - config.regime_decay_step, SCORE_MIN);
     }
 
-    return confirmed_regime;
+    // Switch only when confidence is high enough
+    if (regime_score >= config.regime_confirm_count)
+    {
+      confirmed_regime = regime_candidate;
+      regime_score = config.regime_confirm_count / 2; // avoid instant flip back
+    }
+  }
+
+  return confirmed_regime;
 }

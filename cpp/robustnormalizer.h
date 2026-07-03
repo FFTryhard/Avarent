@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include "utils.h"
 
 struct EMA
@@ -72,14 +73,14 @@ public:
     double current() const
     {
         if (!has_curr_)
-            throw std::exception("ScalarBuffer: current value not initialized");
+            throw std::runtime_error("ScalarBuffer: current value not initialized");
         return curr_;
     }
 
     double previous() const
     {
         if (!has_prev_)
-            throw std::exception("ScalarBuffer: previous value not available");
+            throw std::runtime_error("ScalarBuffer: previous value not available");
         return prev_;
     }
 

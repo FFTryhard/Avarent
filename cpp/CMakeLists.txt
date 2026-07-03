@@ -10,7 +10,16 @@ set(PYBIND11_FINDPYTHON ON)
 
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
-find_package(Eigen3 CONFIG REQUIRED)
+find_package(Eigen3 CONFIG)
+if(NOT TARGET Eigen3::Eigen)
+    include(FetchContent)
+    FetchContent_Declare(
+      eigen
+      GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+      GIT_TAG        3.4.0
+    )
+    FetchContent_MakeAvailable(eigen)
+endif()
 
 set(SRC
     engine.cpp
@@ -27,6 +36,8 @@ target_link_libraries(mga_module PRIVATE
     Eigen3::Eigen
 )
 
+target_compile_definitions(mga_module PRIVATE Py_NO_LINK_LIB)
+
 target_include_directories(mga_module PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -35,7 +46,6 @@ add_executable(run main.cpp ${SRC}) #engine.cpp has a int main() i just like it 
 
 target_link_libraries(run PRIVATE
     Eigen3::Eigen
-    Python::Python
 )
 
 target_include_directories(run PRIVATE

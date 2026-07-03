@@ -11,11 +11,27 @@ private:
     int buffer_size;
     std::vector<double> buffer;
 
+    // Bin edge thresholds for 5-level GEC derivative discretization
+    double BIN_EDGE_STRONG_NEG;
+    double BIN_EDGE_WEAK_NEG;
+    double BIN_EDGE_WEAK_POS;
+    double BIN_EDGE_STRONG_POS;
+    int    BIN_PERSISTENCE_THRESHOLD;
+
 public:
-    RollingBinBuffer(int size) : buffer_size(size)
+    // Full constructor — Engine uses this with config values
+    RollingBinBuffer(int size, double bin_weak, double bin_strong, int persistence)
+        : buffer_size(size),
+          BIN_EDGE_STRONG_NEG(-bin_strong), BIN_EDGE_WEAK_NEG(-bin_weak),
+          BIN_EDGE_WEAK_POS(bin_weak), BIN_EDGE_STRONG_POS(bin_strong),
+          BIN_PERSISTENCE_THRESHOLD(persistence)
     {
         buffer.reserve(buffer_size);
     }
+
+    // Legacy constructor — backward compat for standalone runner
+    RollingBinBuffer(int size)
+        : RollingBinBuffer(size, 0.10, 0.20, 2) {}
 
     // push a new value
     void push(double val)
@@ -27,16 +43,15 @@ public:
         buffer.push_back(val);
     }
 
-    int eval(double val) const // cant change anything in it
+    int eval(double val) const
     {
-        // trivial thresholds, tweak later
-        if (val < -0.20) // 0.20, 0.10 with 6 and dt1.0seems goodd. just need to work on delay
+        if (val < BIN_EDGE_STRONG_NEG)
             return -2;
-        if (val < -0.10)
+        if (val < BIN_EDGE_WEAK_NEG)
             return -1;
-        if (val < 0.10)
+        if (val < BIN_EDGE_WEAK_POS)
             return 0;
-        if (val < 0.20)
+        if (val < BIN_EDGE_STRONG_POS)
             return 1;
         return 2;
     }
@@ -49,7 +64,7 @@ public:
 
         double val = derivativeOLS(buffer, 1.0);
 
-        int bin = eval(val); // or s
+        int bin = eval(val);
 
         update(bin);
 
@@ -68,7 +83,7 @@ public:
             count = 1;
         }
 
-        if (count >= 2) // if is ee flicker bump to three
+        if (count >= BIN_PERSISTENCE_THRESHOLD)
         {
             last_bin = candidate_bin;
             count = 0;

@@ -1,0 +1,5 @@
+recursive-include cpp *
+prune cpp/build
+prune cpp/.cache
+include pyproject.toml
+include README.md
