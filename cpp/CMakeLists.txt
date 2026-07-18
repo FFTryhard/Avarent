@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(VCPKG_APPLOCAL_DEPS OFF)
+
+
 set(PYBIND11_FINDPYTHON ON)
 
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
@@ -24,6 +27,7 @@ endif()
 set(SRC
     engine.cpp
     utils.cpp
+    python_runtime.cpp
 )
 
 pybind11_add_module(mga_module
@@ -36,16 +40,15 @@ target_link_libraries(mga_module PRIVATE
     Eigen3::Eigen
 )
 
-target_compile_definitions(mga_module PRIVATE Py_NO_LINK_LIB)
-
 target_include_directories(mga_module PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_executable(run main.cpp ${SRC}) #engine.cpp has a int main() i just like it if i wanna run quick tests
+add_executable(run main.cpp ${SRC}) 
 
 target_link_libraries(run PRIVATE
     Eigen3::Eigen
+    pybind11::embed 
 )
 
 target_include_directories(run PRIVATE

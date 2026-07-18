@@ -142,3 +142,4 @@ std::vector<std::vector<double>>
 covarianceMatrixx(const std::vector<std::vector<double>> &data);
 std::vector<double>
 volatilityFromCov(const std::vector<std::vector<double>> &cov);
+double distanceSquared(const std::vector<double> &a, const std::vector<double> &b);

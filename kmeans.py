@@ -23,9 +23,9 @@ for k in [5, 6]:
         pct = np.mean(labels == i) * 100
         print(f"  Cluster {i}: G={c[0]:.3f}  E={c[1]:.3f}  C={c[2]:.3f}  ({pct:.1f}%)")
 
-"""
+
 # 3D scatter for k=5
-kmeans6 = KMeans(n_clusters=6, random_state=42, n_init=20)
+kmeans6 = KMeans(n_clusters=4, random_state=42, n_init=20)
 labels6 = kmeans6.fit_predict(gec)
 
 fig = plt.figure(figsize=(10, 7))
@@ -35,11 +35,11 @@ scatter = ax.scatter(gec[:,0], gec[:,1], gec[:,2],
 ax.scatter(*kmeans6.cluster_centers_.T, 
            c='black', marker='X', s=200, label='Centers')
 ax.set_xlabel('G'); ax.set_ylabel('E'); ax.set_zlabel('C')
-plt.title('GEC Space k=6')
+plt.title('GEC Space k=4')
 plt.legend()
 plt.show()
-"""
 
+"""
 kmeans6 = KMeans(n_clusters=6, random_state=42, n_init=20)
 labels6 = kmeans6.fit_predict(gec)
 
@@ -76,3 +76,4 @@ for c in range(6):
 highC_cluster = df.loc[df['C'].idxmax(), 'cluster']
 print(f"\n=== HIGH-C CLUSTER DATES (cluster {highC_cluster}) ===")
 print(df[df['cluster'] == highC_cluster][['date','G','E','C']].head(30))
+"""

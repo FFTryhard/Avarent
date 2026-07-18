@@ -9,6 +9,7 @@
 #include "utils.h"
 #include <Eigen/Dense>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <complex>
 #include <cstdio>
@@ -22,11 +23,18 @@
 #include <limits>
 #include <string>
 #include <vector>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+#include "python_runtime.h"
 
 #define DATA(x) std::cout << x << '\n';
 #define LOG(x) std::cerr << x << std::endl;
 
-struct sysOutput {
+namespace py = pybind11;
+
+struct sysOutput
+{
   // Decision outputs
   std::string decision_regime;
   std::string decision_regime_rationale;
@@ -38,10 +46,81 @@ struct sysOutput {
   std::vector<double> model_pc1_weights_smoothed;
 };
 
-class Engine {
+class Engine
+{
 public:
   // Construct from a validated ClientConfig
-  explicit Engine(const ClientConfig &cfg);
+  // explicit Engine(const ClientConfig &cfg);
+  /*This is only a declaration. It tells the compiler that Engine has a constructor taking a const ClientConfig&, but it doesn't define what the constructor does. The actual implementation must appear elsewhere, for example:*/
+  /*
+  Engine(const ClientConfig &cfg)
+      : config(cfg)
+  {
+
+    if (!Py_IsInitialized())
+    {
+      throw std::runtime_error(
+          "Python interpreter is not initialized");
+    }
+
+    py::module_ sys = py::module_::import("sys");
+    sys.attr("path").attr("append")("C:/Users/H/Documents/projects/Avarent/avarent"); // folder containing hmm_fitter.py
+
+    py::module_ hmm = py::module_::import("hmm_fitter");
+    fit_and_match = hmm.attr("fit_and_match");
+
+    previous_means = transform(default_prototypes); // example
+  }
+  */
+  Engine(const ClientConfig &cfg)
+      : config(cfg)
+  {
+    std::cout << "Engine: start" << std::endl;
+
+    py::module_ sys = py::module_::import("sys");
+
+    std::cout << "Engine: imported sys" << std::endl;
+
+    sys.attr("path").attr("append")(
+        "C:/Users/H/Documents/projects/Avarent/avarent");
+
+    std::cout << "Engine: path added" << std::endl;
+
+    py::module_ hmm;
+
+    try
+    {
+      std::cout << "importing numpy..." << std::endl;
+      py::module_ np = py::module_::import("numpy");
+      std::cout << "numpy OK" << std::endl;
+
+      std::cout << "importing scipy..." << std::endl;
+      py::module_ scipy = py::module_::import("scipy");
+      std::cout << "scipy OK" << std::endl;
+
+      std::cout << "importing hmmlearn..." << std::endl;
+      py::module_ hmmlearn = py::module_::import("hmmlearn");
+      std::cout << "hmmlearn OK" << std::endl;
+
+      std::cout << "importing hmm_fitter..." << std::endl;
+      hmm = py::module_::import("hmm_fitter");
+      std::cout << "hmm_fitter OK" << std::endl;
+    }
+    catch (const py::error_already_set &e)
+    {
+      std::cerr << e.what() << std::endl;
+    }
+
+    std::cout << "Engine: imported hmm_fitter" << std::endl;
+
+    fit_and_match = hmm.attr("fit_and_match");
+
+    std::cout << "Engine: got function" << std::endl;
+
+    previous_means = transform(default_prototypes);
+
+    std::cout << "Engine: finished" << std::endl;
+  }
 
   void ingest(const std::vector<double> &row); // feed new data
 
@@ -55,7 +134,7 @@ public:
 
   sysOutput getOutput();
 
-  //tempo
+  // tempo
   std::vector<std::vector<double>> htts;
 
 private:
@@ -105,14 +184,14 @@ private:
   AdaptiveOnlineNormalizer2 in2;
 
   // History buffer for macroscopic G and C deltas
-  std::deque<NormalizerState> state_history; //use this
+  std::deque<NormalizerState> state_history; // use this
 
   MatrixBuffer U_buff, Uvec_buff;
 
   // Test RobustScores for G2, E2, C2
   RobustScore g2_score{config.robust_history, config.robust_warmup}, e2_score{config.robust_history, config.robust_warmup}, c2_score{config.robust_history, config.robust_warmup};
   RobustScore e_score{config.robust_history, config.robust_warmup};
-  
+
   EMA g2_ema{config.gec_ema_alpha}, e2_ema{config.gec_ema_alpha}, c2_ema{config.gec_ema_alpha};
   EMA e_ema{config.gec_ema_alpha};
 
@@ -142,5 +221,10 @@ private:
   Eigen::VectorXd pc1_smoothed;
 
   sysOutput current_output;
-};
 
+  py::object fit_and_match;
+  Eigen::MatrixXd previous_means;              // K x 3
+  std::vector<std::vector<double>> gec_window; // N x 3
+
+  // void runHMM(const std::vector<std::array<double, 3>>& data);
+};

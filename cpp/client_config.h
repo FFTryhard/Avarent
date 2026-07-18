@@ -34,6 +34,9 @@ struct ClientConfig {
     int    stability_window;
     int    swirl_window;
 
+    int hmmwindow;
+    int hmmwindowstride;
+
     // ---- SENSITIVITY ----
     int    regime_confirm_count;
     int    regime_decay_step;
@@ -70,6 +73,8 @@ inline ClientConfig profile_defaults(EngineProfile profile) {
     // TIME_HORIZON
     cfg.window_size             = 250;
     cfg.window_stride           = 20;
+    cfg.hmmwindow               = 200;
+    cfg.hmmwindowstride         = 50;
     cfg.robust_history          = 100;
     cfg.robust_warmup           = 30;
     cfg.lle_history_depth       = 100;

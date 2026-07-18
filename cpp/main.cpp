@@ -99,7 +99,15 @@ void clipUpper(std::vector<double> &v, double hi);
 
 int main()
 {
+  std::cout << "A: entering main\n";
+  
+  init_python();
+
+  std::cout << "B: python initialized\n";
+
   Engine engine(profile_defaults(EngineProfile::LONG_SHORT_EQUITY));
+
+  std::cout << "C: engine created\n";
 
   std::ifstream file(
       "C:/Users/H/Documents/projects/Avarent/data/etf_daily_log_returns.csv");
@@ -660,8 +668,6 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
   double cashBase1 = INITIAL_CAPITAL;
   double cashBase2 = INITIAL_CAPITAL;
   double cashBase3 = INITIAL_CAPITAL;
-  double cashBase4 = INITIAL_CAPITAL;
-  double cashBase5 = INITIAL_CAPITAL;
 
   double cashBase = INITIAL_CAPITAL;
   double cashOverlay = INITIAL_CAPITAL;
@@ -675,19 +681,15 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
   std::vector<double> posBase1(nAssets, 0.0);
   std::vector<double> posBase2(nAssets, 0.0);
   std::vector<double> posBase3(nAssets, 0.0);
-  std::vector<double> posBase4(nAssets, 0.0);
-  std::vector<double> posBase5(nAssets, 0.0);
 
   std::vector<double> posOverlay(nAssets, 0.0);
   std::vector<double> posBase(nAssets, 0.0);
 
-  std::vector<double> histBase0, histBase1, histBase2, histBase3, histBase4, histBase5, histBase, histOverlay;
+  std::vector<double> histBase0, histBase1, histBase2, histBase3, histBase, histOverlay;
   histBase0.reserve(nDays);
   histBase1.reserve(nDays);
   histBase2.reserve(nDays);
   histBase3.reserve(nDays);
-  histBase4.reserve(nDays);
-  histBase5.reserve(nDays);
 
   histBase.reserve(nDays);
   histOverlay.reserve(nDays);
@@ -695,24 +697,22 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
   bool snapshotReady = false;
   sysOutput snapshot{}; // last valid snapshot, persisted across days
 
-  rollingSharpe rollingsharpe0, rollingsharpe1, rollingsharpe2, rollingsharpe3, rollingsharpe4, rollingsharpe5;
+  rollingSharpe rollingsharpe0, rollingsharpe1, rollingsharpe2, rollingsharpe3;
 
   double sharpe0 = std::numeric_limits<double>::quiet_NaN();
   double sharpe1 = std::numeric_limits<double>::quiet_NaN();
   double sharpe2 = std::numeric_limits<double>::quiet_NaN();
   double sharpe3 = std::numeric_limits<double>::quiet_NaN();
-  double sharpe4 = std::numeric_limits<double>::quiet_NaN();
-  double sharpe5 = std::numeric_limits<double>::quiet_NaN();
 
-  std::vector<double> sharpes = {sharpe0, sharpe1, sharpe2, sharpe3, sharpe4, sharpe5};
-  std::vector<double> stratprobs{1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0};
+  std::vector<double> sharpes = {sharpe0, sharpe1, sharpe2, sharpe3};
+  std::vector<double> stratprobs{1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0};
 
-  std::vector<std::string> regime_labels = {"Stressed", "Transitioning", "Dispersed", "Trending", "Compressed", "Neutral"};
-  std::vector<int> indices = {0, 1, 2, 3, 4, 5};
+  std::vector<std::string> regime_labels = {"Stressed", "Dispersed", "Trending", "Neutral"};
+  std::vector<int> indices = {0, 1, 2, 3};
   std::random_device rd;
   std::mt19937 gen(rd());
 
-  std::uniform_int_distribution<> dist(0, 5);
+  std::uniform_int_distribution<> dist(0, 3);
 
   // BTRTRLT
   std::deque<std::vector<double>> windowReturns;
@@ -793,19 +793,12 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
     // std::string currentRegime = dumb_regime;
     // std::string currentRegime = regime_labels[dist(gen)];
 
-    std::vector<std::vector<double>> baseSignals(6);
+    std::vector<std::vector<double>> baseSignals(4);
 
     baseSignals[0] = longVolatilitySignal(returnHistory);
-
-    baseSignals[1] = reducedRiskRiskParitySignal(returnHistory);
-
-    baseSignals[2] = crossSectionalMomentumSignal(returnHistory);
-
-    baseSignals[3] = trendFollowingSignal(returnHistory);
-
-    baseSignals[4] = meanReversionSignal(returnHistory);
-
-    baseSignals[5] = riskParitySignal(returnHistory);
+    baseSignals[1] = crossSectionalMomentumSignal(returnHistory);
+    baseSignals[2] = trendFollowingSignal(returnHistory);
+    baseSignals[3] = riskParitySignal(returnHistory);
 
     /*
     for (const auto &x : indices)
@@ -821,14 +814,10 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
     if (currentRegime == regime_labels[0])
       baseSig = longVolatilitySignal(returnHistory);
     else if (currentRegime == regime_labels[1])
-      baseSig = reducedRiskRiskParitySignal(returnHistory);
-    else if (currentRegime == regime_labels[2])
       baseSig = crossSectionalMomentumSignal(returnHistory);
-    else if (currentRegime == regime_labels[3])
+    else if (currentRegime == regime_labels[2])
       baseSig = trendFollowingSignal(returnHistory);
-    else if (currentRegime == regime_labels[4])
-      baseSig = meanReversionSignal(returnHistory);
-    else if (currentRegime == regime_labels[5])
+    else if (currentRegime == regime_labels[3])
       baseSig = riskParitySignal(returnHistory);
 
     /*
@@ -863,8 +852,6 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
     double valBase1 = cashBase1 + dotSum(posBase1, prices);
     double valBase2 = cashBase2 + dotSum(posBase2, prices);
     double valBase3 = cashBase3 + dotSum(posBase3, prices);
-    double valBase4 = cashBase4 + dotSum(posBase4, prices);
-    double valBase5 = cashBase5 + dotSum(posBase5, prices);
 
     double sumExp = 0.0;
     for (const auto &x : sharpes)
@@ -999,55 +986,21 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
       }
     }
 
-    if (isRebalanceDay)
-    {
-      for (int a = 0; a < nAssets; ++a)
-      {
-        double targetDollars = baseSignals[4][a] * valBase4;
-        double currentDollars = posBase4[a] * prices[a];
-        double trade = targetDollars - currentDollars;
-        double cost = std::abs(trade) * (TRANSACTION_COST_BPS / 10000.0);
-        cashBase4 -= cost;
-        posBase4[a] += trade / prices[a];
-        cashBase4 -= trade;
-      }
-    }
-
-    if (isRebalanceDay)
-    {
-      for (int a = 0; a < nAssets; ++a)
-      {
-        double targetDollars = baseSignals[5][a] * valBase5;
-        double currentDollars = posBase5[a] * prices[a];
-        double trade = targetDollars - currentDollars;
-        double cost = std::abs(trade) * (TRANSACTION_COST_BPS / 10000.0);
-        cashBase5 -= cost;
-        posBase5[a] += trade / prices[a];
-        cashBase5 -= trade;
-      }
-    }
-
     // Base strat(s)
     valBase0 = cashBase0 + dotSum(posBase0, prices);
     valBase1 = cashBase1 + dotSum(posBase1, prices);
     valBase2 = cashBase2 + dotSum(posBase2, prices);
     valBase3 = cashBase3 + dotSum(posBase3, prices);
-    valBase4 = cashBase4 + dotSum(posBase4, prices);
-    valBase5 = cashBase5 + dotSum(posBase5, prices);
 
     rollingsharpe0.push(valBase0);
     rollingsharpe1.push(valBase1);
     rollingsharpe2.push(valBase2);
     rollingsharpe3.push(valBase3);
-    rollingsharpe4.push(valBase4);
-    rollingsharpe5.push(valBase5);
 
     sharpes[0] = rollingsharpe0.getSharpe();
     sharpes[1] = rollingsharpe1.getSharpe();
     sharpes[2] = rollingsharpe2.getSharpe();
     sharpes[3] = rollingsharpe3.getSharpe();
-    sharpes[4] = rollingsharpe4.getSharpe();
-    sharpes[5] = rollingsharpe5.getSharpe();
 
     // Overlay
     valOverlay = cashOverlay + dotSum(posOverlay, prices);
@@ -1059,8 +1012,6 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
     histBase1.push_back(valBase1);
     histBase2.push_back(valBase2);
     histBase3.push_back(valBase3);
-    histBase4.push_back(valBase4);
-    histBase5.push_back(valBase5);
 
     histBase.push_back(valBase);
     histOverlay.push_back(valOverlay);
@@ -1176,9 +1127,8 @@ void runShuffleHarness(const std::vector<std::string> &headers,
 
   // Store prices and all 6 signal vectors for each day
   std::vector<std::vector<double>> pricesPerDay(nDays);
-  // signals[day][strategy] = weight vector
   std::vector<std::vector<std::vector<double>>> signals(nDays,
-                                                        std::vector<std::vector<double>>(6));
+                                                        std::vector<std::vector<double>>(4));
 
   for (int i = 0; i < nDays; ++i)
   {
@@ -1189,13 +1139,11 @@ void runShuffleHarness(const std::vector<std::string> &headers,
       prices[a] *= (1.0 + todayReturns[a]);
     pricesPerDay[i] = prices;
 
-    // Compute all 6 signals from returnHistory BEFORE today's push
+    // Compute all 4 signals from returnHistory BEFORE today's push
     signals[i][0] = longVolatilitySignal(returnHistory);
-    signals[i][1] = reducedRiskRiskParitySignal(returnHistory);
-    signals[i][2] = crossSectionalMomentumSignal(returnHistory);
-    signals[i][3] = trendFollowingSignal(returnHistory);
-    signals[i][4] = meanReversionSignal(returnHistory);
-    signals[i][5] = riskParitySignal(returnHistory);
+    signals[i][1] = crossSectionalMomentumSignal(returnHistory);
+    signals[i][2] = trendFollowingSignal(returnHistory);
+    signals[i][3] = riskParitySignal(returnHistory);
 
     // Push today into history
     for (int a = 0; a < nAssets; ++a)
@@ -1209,7 +1157,7 @@ void runShuffleHarness(const std::vector<std::string> &headers,
 
   // --- Phase 2: Run N overlay simulations with random regimes ---
   std::mt19937 gen(42); // fixed seed for reproducibility
-  std::uniform_int_distribution<> regimeDist(0, 5);
+  std::uniform_int_distribution<> regimeDist(0, 3);
 
   std::vector<double> shuffledSharpes(numIterations);
   std::vector<double> shuffledReturns(numIterations);

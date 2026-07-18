@@ -48,7 +48,7 @@ class EngineService:
     Wraps one C++ Engine instance.
 
     Used in two modes:
-      Mode A (hosted)  — data_feed is provided; feed calls ingest_row on each tick.
+      Mode A (hosted)  — data_feed is provided; feed calls ingest_row on each tick.     
       Mode B (BYOD)    — data_feed is None; API endpoint calls ingest_row directly.
     """
 

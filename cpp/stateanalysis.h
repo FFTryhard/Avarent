@@ -8,134 +8,135 @@
 #include <iostream>
 #include <limits>
 #include <set>
-#include <stdexcept>
+#include <stdexcept>   
 #include <utility>
 #include <vector>
 
-enum class CurRegime {
+enum class CurRegime
+{
   Trending,
   Stressed,
-  Compressed,
-  Transitioning,
+  //Compressed,
+  //Transitioning,
   Dispersed,
   Neutral
 };
 
-struct Prototype {
-    double G, E, C;
-    CurRegime regime;
-};
-
-
-const std::vector<Prototype> prototypes = {
-    {0.328, 0.137, 0.656, CurRegime::Neutral},
-    {0.407, 1.187, 0.795, CurRegime::Transitioning},
-    {0.241, 3.111, 0.894, CurRegime::Stressed},
-    {0.037, 6.873, 0.474, CurRegime::Stressed},  // collapse crisis into Stressed
-    {0.788, 0.181, 1.346, CurRegime::Dispersed},
-    {2.056, 0.886, 1.826, CurRegime::Trending}
-};
-
-inline size_t argmax(const std::vector<double>& v) {
-    return std::distance(v.begin(),
-                         std::max_element(v.begin(), v.end()));
-}
-
-inline size_t second_argmax(const std::vector<double>& v) {
-    size_t best = argmax(v);
-
-    size_t second = (best == 0) ? 1 : 0;
-    for (size_t i = 0; i < v.size(); ++i) {
-        if (i == best) continue;
-        if (v[i] > v[second]) second = i;
-    }
-    return second;
-}
-
-inline std::vector<double> softmax(const std::vector<double>& v)
+struct Prototype
 {
-    std::vector<double> result = v;
+  CurRegime regime;
+  double G, E, C;
+};
 
-    const double max_val = *std::max_element(result.begin(), result.end());
+inline Eigen::MatrixXd transform(const std::vector<Prototype>& ps)
+{
+    Eigen::MatrixXd means(ps.size(), 3);
 
-    double sum = 0.0;
-    for (double& x : result)
+    for (size_t i = 0; i < ps.size(); ++i)
     {
-        x = std::exp(x - max_val);
-        sum += x;
+        means(i, 0) = ps[i].G;
+        means(i, 1) = ps[i].E;
+        means(i, 2) = ps[i].C;
     }
 
-    for (double& x : result)
-        x /= sum;
-
-    return result;
+    return means;
 }
 
-
-inline CurRegime classifyRegime(double G, double E, double C)
+inline std::vector<Prototype> reversetransform(const Eigen::MatrixXd& means)
 {
-    // E weighted 2x because it's the primary separating axis
-    auto dist = [](double g, double e, double c,
-                   const Prototype& p) {
-        return std::sqrt(
-            1.0 * std::pow(g - p.G, 2) +
-            2.0 * std::pow(e - p.E, 2) +  // E matters more
-            1.0 * std::pow(c - p.C, 2)
-        );
-    };
-
-    double min_dist = std::numeric_limits<double>::max();
-    CurRegime best  = CurRegime::Neutral;
-
-    for (const auto& p : prototypes) {
-        double d = dist(G, E, C, p);
-        if (d < min_dist) {
-            min_dist = d;
-            best     = p.regime;
-        }
+    if (means.cols() != 3)
+    {
+        throw std::invalid_argument("Matrix must have exactly 3 columns.");
     }
-    return best;
+
+    std::vector<Prototype> ps(means.rows());
+
+    for (Eigen::Index i = 0; i < means.rows(); ++i)
+    {
+        ps[i].G = means(i, 0);
+        ps[i].E = means(i, 1);
+        ps[i].C = means(i, 2);
+    }
+
+    return ps;
 }
 
-//SOFTMAX PROBABLY BETTER
+const std::vector<Prototype> default_prototypes = {
+    // Regime                G      E      C
+    {CurRegime::Trending,    0.50,  0.20, -1.00},  // stable factor, orderly, concentrated
+    {CurRegime::Stressed,    1.50,  1.90, -0.50},  // locked-in panic factor, extreme E, concentrated
+    {CurRegime::Dispersed,   1.80,  0.20,  2.00},  // flat spectrum -> eigengap noise -> high G, calm, dispersed
+    {CurRegime::Neutral,     0.20,  0.10,  0.20},  // near unconditional mean
+};
 
+inline CurRegime classifyRegime(double G, double E, double C, const std::vector<Prototype> &current_protos)
+{
+  // E weighted 1.0x because it's the primary separating axis
+  auto dist = [](double g, double e, double c,
+                 const Prototype &p)
+  {
+    return std::sqrt(
+        1.0 * std::pow(g - p.G, 2) +
+        1.0 * std::pow(e - p.E, 2) + // E matters moren, so it was 2.0
+        1.0 * std::pow(c - p.C, 2));
+  };
 
+  double min_dist = std::numeric_limits<double>::max();
+  CurRegime best = CurRegime::Neutral;
 
+  for (const auto &p : current_protos)
+  {
+    double d = dist(G, E, C, p);
+    if (d < min_dist)
+    {
+      min_dist = d;
+      best = p.regime;
+    }
+  }
+  return best;
+}
 
+inline size_t argmax(const std::vector<double> &v)
+{
+  return std::distance(v.begin(),
+                       std::max_element(v.begin(), v.end()));
+}
 
+inline size_t second_argmax(const std::vector<double> &v)
+{
+  size_t best = argmax(v);
 
+  size_t second = (best == 0) ? 1 : 0;
+  for (size_t i = 0; i < v.size(); ++i)
+  {
+    if (i == best)
+      continue;
+    if (v[i] > v[second])
+      second = i;
+  }
+  return second;
+}
 
+inline std::vector<double> softmax(const std::vector<double> &v)
+{
+  std::vector<double> result = v;
 
+  const double max_val = *std::max_element(result.begin(), result.end());
 
+  double sum = 0.0;
+  for (double &x : result)
+  {
+    x = std::exp(x - max_val);
+    sum += x;
+  }
 
+  for (double &x : result)
+    x /= sum;
 
+  return result;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// SOFTMAX PROBABLY BETTER
 
 // MAKE THEM INLINE YOU IDIOT
 
@@ -152,9 +153,8 @@ why its important, and what to do next (implication)
 
 */
 
-
-
-struct Patterns {
+struct Patterns
+{
   std::vector<std::string> headers;
 
   Eigen::MatrixXd eigenVectors; // columns = components
@@ -163,7 +163,8 @@ struct Patterns {
   int eff; // effective rank
 };
 
-struct domEigenvectors {
+struct domEigenvectors
+{
 
   Eigen::VectorXd ep1;
   Eigen::VectorXd ep2;
@@ -172,7 +173,8 @@ struct domEigenvectors {
   bool init = false;
 };
 
-struct FactorTracker {
+struct FactorTracker
+{
   Eigen::VectorXd smoothed;
   std::vector<int> last_top;
   int persistence_count = 0;
@@ -181,14 +183,16 @@ struct FactorTracker {
   double alpha = 0.2;           // smoothing
   int required_persistence = 3; // hysteresis
 
-  void reset() {
+  void reset()
+  {
     initialized = false;
     persistence_count = 0;
     last_top.clear();
   }
 };
 
-inline double temporalConsistency(const std::deque<CurRegime> &h) {
+inline double temporalConsistency(const std::deque<CurRegime> &h)
+{
   int count = 0;
   for (auto r : h)
     if (r == h.back())
@@ -197,16 +201,18 @@ inline double temporalConsistency(const std::deque<CurRegime> &h) {
   return (double)count / h.size();
 }
 
-inline std::string enum_to_string_regime(CurRegime regime) {
-  switch (regime) {
+inline std::string enum_to_string_regime(CurRegime regime)
+{
+  switch (regime)
+  {
   case CurRegime::Trending:
     return "Trending";
   case CurRegime::Stressed:
     return "Stressed";
-  case CurRegime::Compressed:
-    return "Compressed";
-  case CurRegime::Transitioning:
-    return "Transitioning";
+  //case CurRegime::Compressed:
+  //  return "Compressed";
+  //case CurRegime::Transitioning:
+  // return "Transitioning";
   case CurRegime::Dispersed:
     return "Dispersed";
   case CurRegime::Neutral:
@@ -216,8 +222,10 @@ inline std::string enum_to_string_regime(CurRegime regime) {
   }
 }
 
-inline std::string interpret(CurRegime r) {
-  switch (r) {
+inline std::string interpret(CurRegime r)
+{
+  switch (r)
+  {
   case CurRegime::Trending:
     return "Market exhibits persistent directional movement. Trends are "
            "well-defined and price action is driven by sustained momentum.";
@@ -225,6 +233,8 @@ inline std::string interpret(CurRegime r) {
   case CurRegime::Stressed:
     return "Market is under stress. Volatility, correlations, and risk "
            "aversion are elevated, often leading to disorderly price action.";
+
+  /*
 
   case CurRegime::Compressed:
     return "Volatility and dispersion are subdued. Market activity is "
@@ -235,6 +245,8 @@ inline std::string interpret(CurRegime r) {
     return "Existing market structure is evolving. Leadership, correlations, "
            "and factor relationships are shifting as the market searches for "
            "a new equilibrium.";
+  
+  */
 
   case CurRegime::Dispersed:
     return "Multiple independent drivers are influencing markets. "
@@ -250,22 +262,24 @@ inline std::string interpret(CurRegime r) {
   }
 }
 
-
-inline void normalize(Eigen::VectorXd &v) {
+inline void normalize(Eigen::VectorXd &v)
+{
   double s = v.sum();
   if (s > 1e-12)
     v /= s;
 }
 
 inline std::tuple<Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd>
-getTop3EigenVectors(const Patterns &p) {
+getTop3EigenVectors(const Patterns &p)
+{
   return {p.eigenVectors.col(0), p.eigenVectors.col(1), p.eigenVectors.col(2)};
 }
 
 inline std::vector<double> eigenStateProjections3dim(const Eigen::VectorXd &e1,
                                                      const Eigen::VectorXd &e2,
                                                      const Eigen::VectorXd &e3,
-                                                     const Eigen::VectorXd &s) {
+                                                     const Eigen::VectorXd &s)
+{
   /*
   float proj1 = pow(e1.dot(s), 2) / s.dot(s);
   float proj2 = pow(e2.dot(s), 2) / s.dot(s);
@@ -288,15 +302,19 @@ inline std::vector<double> eigenStateProjections3dim(const Eigen::VectorXd &e1,
 }
 
 inline std::vector<std::pair<int, double>>
-getTopK(const Eigen::VectorXd &eig, FactorTracker &tracker, int topN) {
+getTopK(const Eigen::VectorXd &eig, FactorTracker &tracker, int topN)
+{
   Eigen::VectorXd importance = eig;
   normalize(importance);
 
   // --- EMA smoothing ---
-  if (!tracker.initialized) {
+  if (!tracker.initialized)
+  {
     tracker.smoothed = importance;
     tracker.initialized = true;
-  } else {
+  }
+  else
+  {
     tracker.smoothed =
         tracker.alpha * importance + (1.0 - tracker.alpha) * tracker.smoothed;
   }
@@ -307,7 +325,8 @@ getTopK(const Eigen::VectorXd &eig, FactorTracker &tracker, int topN) {
     pairs.emplace_back(i, tracker.smoothed(i));
 
   std::sort(pairs.begin(), pairs.end(),
-            [](auto &a, auto &b) { return a.second > b.second; });
+            [](auto &a, auto &b)
+            { return a.second > b.second; });
 
   // --- candidate ---
   std::vector<int> candidate;
@@ -315,15 +334,21 @@ getTopK(const Eigen::VectorXd &eig, FactorTracker &tracker, int topN) {
     candidate.push_back(pairs[i].first);
 
   // --- INIT ---
-  if (tracker.last_top.empty()) {
+  if (tracker.last_top.empty())
+  {
     tracker.last_top = candidate;
     tracker.persistence_count = 0;
-  } else {
+  }
+  else
+  {
     // --- OVERLAP CHECK ---
     int overlap = 0;
-    for (int c : candidate) {
-      for (int l : tracker.last_top) {
-        if (c == l) {
+    for (int c : candidate)
+    {
+      for (int l : tracker.last_top)
+      {
+        if (c == l)
+        {
           overlap++;
           break;
         }
@@ -332,13 +357,17 @@ getTopK(const Eigen::VectorXd &eig, FactorTracker &tracker, int topN) {
 
     int required_overlap = std::max(1, topN / 2);
 
-    if (overlap >= required_overlap) {
+    if (overlap >= required_overlap)
+    {
       tracker.persistence_count++;
-    } else {
+    }
+    else
+    {
       tracker.persistence_count = 1;
     }
 
-    if (tracker.persistence_count >= tracker.required_persistence) {
+    if (tracker.persistence_count >= tracker.required_persistence)
+    {
       tracker.last_top = candidate;
       tracker.persistence_count = 0;
     }
@@ -354,12 +383,14 @@ getTopK(const Eigen::VectorXd &eig, FactorTracker &tracker, int topN) {
 
 inline std::tuple<std::vector<std::string>, std::vector<double>>
 getAxisInfo(std::vector<std::pair<int, double>> top,
-            std::vector<std::string> headers) {
+            std::vector<std::string> headers)
+{
 
   std::vector<std::string> AXIS_INFO;
   std::vector<double> AXIS_WEIGHTS;
 
-  for (auto [idx, w] : top) {
+  for (auto [idx, w] : top)
+  {
     AXIS_INFO.push_back(headers[idx]);
     AXIS_WEIGHTS.push_back(w);
   }

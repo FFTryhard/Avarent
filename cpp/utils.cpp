@@ -12,19 +12,26 @@
 //  Validation
 // ============================================================
 
-bool checkForNaN(const std::vector<double> &data) {
-  for (size_t i = 0; i < data.size(); ++i) {
-    if (std::isnan(data[i]) || data[i] == 0) {
+bool checkForNaN(const std::vector<double> &data)
+{
+  for (size_t i = 0; i < data.size(); ++i)
+  { 
+    if (std::isnan(data[i]) || data[i] == 0)
+    {
       return true;
     }
   }
   return false;
 }
 
-bool containsNaN(const std::vector<std::vector<double>> &data) {
-  for (const auto &row : data) {
-    for (double value : row) {
-      if (std::isnan(value)) {
+bool containsNaN(const std::vector<std::vector<double>> &data)
+{
+  for (const auto &row : data)
+  {
+    for (double value : row)
+    {
+      if (std::isnan(value))
+      {
         return true;
       }
     }
@@ -32,10 +39,14 @@ bool containsNaN(const std::vector<std::vector<double>> &data) {
   return false;
 }
 
-bool containsINF(const std::vector<std::vector<double>> &data) {
-  for (const auto &row : data) {
-    for (double value : row) {
-      if (!std::isfinite(value)) {
+bool containsINF(const std::vector<std::vector<double>> &data)
+{
+  for (const auto &row : data)
+  {
+    for (double value : row)
+    {
+      if (!std::isfinite(value))
+      {
         return true;
       }
     }
@@ -49,32 +60,40 @@ bool containsINF(const std::vector<std::vector<double>> &data) {
 
 double clamp_(double x) { return std::max(0.0, std::min(1.0, x)); }
 
-double median(std::vector<double> vec) {
+double median(std::vector<double> vec)
+{
   std::sort(vec.begin(), vec.end());
 
-  if (vec.size() % 2 == 0) {
+  if (vec.size() % 2 == 0)
+  {
     return 0.5 * (vec[vec.size() / 2 - 1] + vec[vec.size() / 2]);
-  } else {
+  }
+  else
+  {
     return vec[vec.size() / 2];
   }
 }
 
-double mean(const std::vector<double> &data) {
+double mean(const std::vector<double> &data)
+{
 
   double sum = 0.0;
 
-  for (auto val : data) {
+  for (auto val : data)
+  {
     sum = sum + val;
   }
 
-  if (sum == 0.0) {
+  if (sum == 0.0)
+  {
     return 0.0;
   }
 
   return sum / data.size();
 }
 
-double computeMAD(const std::vector<double> &values) {
+double computeMAD(const std::vector<double> &values)
+{
   std::vector<double> absDeviations(values.size());
   double med = 0;
 
@@ -83,31 +102,40 @@ double computeMAD(const std::vector<double> &values) {
   std::sort(sortedValues.begin(), sortedValues.end());
 
   size_t n = sortedValues.size();
-  if (n % 2 == 0) {
+  if (n % 2 == 0)
+  {
     med = (sortedValues[n / 2 - 1] + sortedValues[n / 2]) / 2.0;
-  } else {
+  }
+  else
+  {
     med = sortedValues[n / 2];
   }
 
   // Calculate the absolute deviations from the median
-  for (size_t i = 0; i < values.size(); ++i) {
+  for (size_t i = 0; i < values.size(); ++i)
+  {
     absDeviations[i] = std::abs(values[i] - med);
   }
 
   // Compute the median of the absolute deviations
   std::sort(absDeviations.begin(), absDeviations.end());
   double mad = 0;
-  if (n % 2 == 0) {
+  if (n % 2 == 0)
+  {
     mad = (absDeviations[n / 2 - 1] + absDeviations[n / 2]) / 2.0;
-  } else {
+  }
+  else
+  {
     mad = absDeviations[n / 2];
   }
 
   return mad;
 }
 
-double computeR2(const std::vector<double> &x, const std::vector<double> &y) {
-  if (x.size() != y.size() || x.empty()) {
+double computeR2(const std::vector<double> &x, const std::vector<double> &y)
+{
+  if (x.size() != y.size() || x.empty())
+  {
     throw std::runtime_error("Vectors must have same non-zero size");
   }
 
@@ -121,7 +149,8 @@ double computeR2(const std::vector<double> &x, const std::vector<double> &y) {
   double sum_x2 = 0.0;
   double sum_y2 = 0.0;
 
-  for (size_t i = 0; i < n; ++i) {
+  for (size_t i = 0; i < n; ++i)
+  {
     double dx = x[i] - mean_x;
     double dy = y[i] - mean_y;
 
@@ -130,18 +159,21 @@ double computeR2(const std::vector<double> &x, const std::vector<double> &y) {
     sum_y2 += dy * dy;
   }
 
-  if (sum_x2 == 0.0 || sum_y2 == 0.0) {
+  if (sum_x2 == 0.0 || sum_y2 == 0.0)
+  {
     throw std::runtime_error("Zero variance in input");
   }
 
   return (sum_xy * sum_xy) / (sum_x2 * sum_y2);
 }
 
-double derivativeOLS(const std::vector<double> &v, double dt) {
+double derivativeOLS(const std::vector<double> &v, double dt)
+{
   double sx = 0, sy = 0, sxx = 0, sxy = 0;
   int n = (int)v.size();
 
-  for (int k = 0; k < n; ++k) {
+  for (int k = 0; k < n; ++k)
+  {
     double t = k * dt;
     sx += t;
     sy += v[k];
@@ -156,7 +188,8 @@ double derivativeOLS(const std::vector<double> &v, double dt) {
   return (n * sxy - sx * sy) / denom;
 }
 
-double perc_(std::vector<double> v, double p) {
+double perc_(std::vector<double> v, double p)
+{
   if (v.empty())
     return 0.0;
   p = std::min(1.0, std::max(0.0, p));
@@ -170,7 +203,8 @@ double perc_(std::vector<double> v, double p) {
 // ============================================================
 
 Eigen::MatrixXd
-dequeToEigenMatrix(const std::deque<std::vector<double>> &data) {
+dequeToEigenMatrix(const std::deque<std::vector<double>> &data)
+{
   if (data.empty())
     return Eigen::MatrixXd{}; // empty matrix
 
@@ -178,7 +212,8 @@ dequeToEigenMatrix(const std::deque<std::vector<double>> &data) {
   const std::size_t cols = data.front().size();
 
   // Optional: sanity check
-  for (const auto &v : data) {
+  for (const auto &v : data)
+  {
     if (v.size() != cols)
       throw std::runtime_error("Inconsistent vector sizes");
   }
@@ -193,40 +228,48 @@ dequeToEigenMatrix(const std::deque<std::vector<double>> &data) {
 }
 
 std::vector<std::vector<double>>
-deque_to_vector(const std::deque<std::vector<double>> &src) {
+deque_to_vector(const std::deque<std::vector<double>> &src)
+{
   std::vector<std::vector<double>> dst;
   dst.reserve(src.size()); // avoid reallocations
 
-  for (const auto &v : src) {
+  for (const auto &v : src)
+  {
     dst.push_back(v); // copies each vector
   }
 
   return dst;
 }
 
-std::vector<double> deque_to_1vector(const std::deque<double> &src) {
+std::vector<double> deque_to_1vector(const std::deque<double> &src)
+{
   std::vector<double> dst;
   dst.reserve(src.size());
 
-  for (const auto &v : src) {
+  for (const auto &v : src)
+  {
     dst.push_back(v);
   }
 
   return dst;
 }
 
-Eigen::VectorXd toEigenVector(const std::vector<double> &vec) {
+Eigen::VectorXd toEigenVector(const std::vector<double> &vec)
+{
   Eigen::VectorXd eigenVec(vec.size());
-  for (size_t i = 0; i < vec.size(); ++i) {
+  for (size_t i = 0; i < vec.size(); ++i)
+  {
     eigenVec(i) = vec[i];
   }
   return eigenVec;
 }
 
 Eigen::MatrixXd
-vectorToEigenMatrix(const std::vector<std::vector<double>> &data) {
+vectorToEigenMatrix(const std::vector<std::vector<double>> &data)
+{
 
-  if (data.empty()) {
+  if (data.empty())
+  {
     std::cerr << "return empty matrix" << std::endl;
     return Eigen::MatrixXd(); // return empty matrix
   }
@@ -235,16 +278,20 @@ vectorToEigenMatrix(const std::vector<std::vector<double>> &data) {
   size_t cols = data[0].size();
 
   // Verify all rows have the same size
-  for (const auto &row : data) {
-    if (row.size() != cols) {
+  for (const auto &row : data)
+  {
+    if (row.size() != cols)
+    {
       throw std::runtime_error(
           "All rows in the 2D vector must have the same length.");
     }
   }
 
   Eigen::MatrixXd mat(rows, cols);
-  for (size_t i = 0; i < rows; ++i) {
-    for (size_t j = 0; j < cols; ++j) {
+  for (size_t i = 0; i < rows; ++i)
+  {
+    for (size_t j = 0; j < cols; ++j)
+    {
       mat(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) =
           data[i][j];
     }
@@ -253,7 +300,8 @@ vectorToEigenMatrix(const std::vector<std::vector<double>> &data) {
   return mat;
 }
 
-std::vector<double> eigenToStdVector(const Eigen::VectorXd &v) {
+std::vector<double> eigenToStdVector(const Eigen::VectorXd &v)
+{
   return std::vector<double>(v.data(), v.data() + v.size());
 }
 
@@ -261,17 +309,20 @@ std::vector<double> eigenToStdVector(const Eigen::VectorXd &v) {
 //  Linear algebra / spectral
 // ============================================================
 
-double effective_Rank(const Eigen::VectorXd &sigma) {
+double effective_Rank(const Eigen::VectorXd &sigma)
+{
 
   double sum_sqrd = 0.0;
 
-  for (auto sv : sigma) {
+  for (auto sv : sigma)
+  {
     sum_sqrd = sum_sqrd + sv;
   }
   sum_sqrd = sum_sqrd * sum_sqrd;
 
   double sum_sqrd_sv = 0.0;
-  for (auto sv : sigma) {
+  for (auto sv : sigma)
+  {
     sum_sqrd_sv = sum_sqrd_sv + (sv * sv);
   }
 
@@ -282,7 +333,8 @@ double effective_Rank(const Eigen::VectorXd &sigma) {
   return r_eff;
 }
 
-double wedin_theoremKGT1(const Eigen::MatrixXd &M_overlap) {
+double wedin_theoremKGT1(const Eigen::MatrixXd &M_overlap)
+{
 
   Eigen::JacobiSVD<Eigen::MatrixXd> svdM(M_overlap);
 
@@ -297,7 +349,8 @@ double wedin_theoremKGT1(const Eigen::MatrixXd &M_overlap) {
 }
 
 double wedin_theoremK1(const Eigen::VectorXd &u_cur_in,
-                       const Eigen::VectorXd &u_prev_in) {
+                       const Eigen::VectorXd &u_prev_in)
+{
   // normalize defensively (SVD U should already be orthonormal, but don't trust
   // anything)
   Eigen::VectorXd u_prev = u_prev_in;
@@ -315,7 +368,8 @@ double wedin_theoremK1(const Eigen::VectorXd &u_cur_in,
 }
 
 double cosineSimilarity(const Eigen::VectorXd &A,
-                        const Eigen::VectorXd &B) { // takes 2 vectors
+                        const Eigen::VectorXd &B)
+{ // takes 2 vectors
 
   float epsilon = 1e-10f;
 
@@ -323,7 +377,8 @@ double cosineSimilarity(const Eigen::VectorXd &A,
   double norm_A = A.norm();      // ||A||
   double norm_B = B.norm();      // ||B||
 
-  if (norm_A < epsilon || norm_B < epsilon) {
+  if (norm_A < epsilon || norm_B < epsilon)
+  {
     return 0.0;
   }
 
@@ -338,7 +393,8 @@ double cosineSimilarity(const Eigen::VectorXd &A,
 // needs. Eliminates the duplicate covariance + eigen solve that PCA() and
 // PCA_Eigenvectors() performed separately.
 
-PCA_Result PCA_Full(const Eigen::MatrixXd &data, double varianceThreshold) {
+PCA_Result PCA_Full(const Eigen::MatrixXd &data, double varianceThreshold)
+{
   if (data.rows() == 0 || data.cols() == 0)
     throw std::runtime_error("Input data matrix is empty!");
   if (data.rows() == 1)
@@ -373,9 +429,11 @@ PCA_Result PCA_Full(const Eigen::MatrixXd &data, double varianceThreshold) {
   double totalVariance = eigenValuesDesc.sum();
   double runningSum = 0.0;
   int k = (int)eigenValuesDesc.size();
-  for (int i = 0; i < eigenValuesDesc.size(); ++i) {
+  for (int i = 0; i < eigenValuesDesc.size(); ++i)
+  {
     runningSum += eigenValuesDesc(i);
-    if (runningSum / totalVariance >= varianceThreshold) {
+    if (runningSum / totalVariance >= varianceThreshold)
+    {
       k = i + 1;
       break;
     }
@@ -399,12 +457,14 @@ PCA_Result PCA_Full(const Eigen::MatrixXd &data, double varianceThreshold) {
 
 // Backward-compatible wrappers (delegate to PCA_Full)
 std::vector<std::vector<double>> PCA(const Eigen::MatrixXd &data,
-                                     double varianceThreshold) {
+                                     double varianceThreshold)
+{
   return PCA_Full(data, varianceThreshold).projected;
 }
 
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd>
-PCA_Eigenvectors(const Eigen::MatrixXd &data, double varianceThreshold) {
+PCA_Eigenvectors(const Eigen::MatrixXd &data, double varianceThreshold)
+{
   auto r = PCA_Full(data, varianceThreshold);
   return {std::move(r.eigenvectors), std::move(r.eigenvalues)};
 }
@@ -420,7 +480,8 @@ std::vector<double> computeSwirlSeverityWindowed(
     int window,                   // e.g. 200
     int stride,                   // e.g. 20
     double speed_floor_percentile // ignore slowest 10% speeds
-) {
+)
+{
   const double eps = 1e-12;
   const int N = (int)X.rows();
   const int d = (int)X.cols();
@@ -442,7 +503,8 @@ std::vector<double> computeSwirlSeverityWindowed(
   A.row(N - 1) = (V.row(N - 1) - V.row(N - 2)) / dt;
 
   std::vector<double> out;
-  for (int start = 0; start + window <= N; start += stride) {
+  for (int start = 0; start + window <= N; start += stride)
+  {
     int end = start + window;
 
     // collect speeds to set a floor
@@ -457,7 +519,8 @@ std::vector<double> computeSwirlSeverityWindowed(
     std::vector<double> omega;
     omega.reserve(window);
 
-    for (int i = start; i < end; ++i) {
+    for (int i = start; i < end; ++i)
+    {
       Eigen::VectorXd v = V.row(i);
       Eigen::VectorXd a = A.row(i);
 
@@ -476,7 +539,8 @@ std::vector<double> computeSwirlSeverityWindowed(
       omega.push_back(w);
     }
 
-    if (omega.size() < 10) {
+    if (omega.size() < 10)
+    {
       out.push_back(0.0);
       continue;
     }
@@ -500,7 +564,8 @@ std::vector<double> computeSwirlSeverityWindowed(
 //  Baseline metrics
 // ============================================================
 
-double eigenvalueDominance(const Eigen::MatrixXd &returns) {
+double eigenvalueDominance(const Eigen::MatrixXd &returns)
+{
   int W = (int)returns.rows();
 
   Eigen::MatrixXd centered = returns.rowwise() - returns.colwise().mean();
@@ -514,7 +579,8 @@ double eigenvalueDominance(const Eigen::MatrixXd &returns) {
   return lambda_max / trace;
 }
 
-Eigen::VectorXd meanAbsoluteReturn(const Eigen::MatrixXd &window) {
+Eigen::VectorXd meanAbsoluteReturn(const Eigen::MatrixXd &window)
+{
   int W = (int)window.rows();
 
   Eigen::VectorXd mar = window.cwiseAbs().colwise().sum() / W;
@@ -523,12 +589,14 @@ Eigen::VectorXd meanAbsoluteReturn(const Eigen::MatrixXd &window) {
 }
 
 // Compute covariance between two vectors
-double covariancee(const std::vector<double> &a, const std::vector<double> &b) {
+double covariancee(const std::vector<double> &a, const std::vector<double> &b)
+{
   double ma = mean(a);
   double mb = mean(b);
 
   double cov = 0.0;
-  for (size_t i = 0; i < a.size(); i++) {
+  for (size_t i = 0; i < a.size(); i++)
+  {
     cov += (a[i] - ma) * (b[i] - mb);
   }
 
@@ -537,9 +605,11 @@ double covariancee(const std::vector<double> &a, const std::vector<double> &b) {
 
 // Extract column from matrix
 std::vector<double> getColumns(const std::vector<std::vector<double>> &data,
-                               int col) {
+                               int col)
+{
   std::vector<double> result(data.size());
-  for (size_t i = 0; i < data.size(); i++) {
+  for (size_t i = 0; i < data.size(); i++)
+  {
     result[i] = data[i][col];
   }
   return result;
@@ -547,7 +617,8 @@ std::vector<double> getColumns(const std::vector<std::vector<double>> &data,
 
 // Compute covariance matrix for the entire matrix
 std::vector<std::vector<double>>
-covarianceMatrixx(const std::vector<std::vector<double>> &data) {
+covarianceMatrixx(const std::vector<std::vector<double>> &data)
+{
   int N = (int)data[0].size(); // number of columns
   std::vector<std::vector<double>> cov(N, std::vector<double>(N));
 
@@ -556,8 +627,10 @@ covarianceMatrixx(const std::vector<std::vector<double>> &data) {
   for (int i = 0; i < N; i++)
     cols[i] = getColumns(data, i);
 
-  for (int i = 0; i < N; i++) {
-    for (int j = i; j < N; j++) {
+  for (int i = 0; i < N; i++)
+  {
+    for (int j = i; j < N; j++)
+    {
       double c = covariancee(cols[i], cols[j]);
       cov[i][j] = c;
       cov[j][i] = c; // exploit symmetry
@@ -569,11 +642,30 @@ covarianceMatrixx(const std::vector<std::vector<double>> &data) {
 
 // Convert covariance matrix to volatility vector
 std::vector<double>
-volatilityFromCov(const std::vector<std::vector<double>> &cov) {
+volatilityFromCov(const std::vector<std::vector<double>> &cov)
+{
   int N = (int)cov.size();
   std::vector<double> vol(N);
-  for (int i = 0; i < N; i++) {
+  for (int i = 0; i < N; i++)
+  {
     vol[i] = std::sqrt(cov[i][i]);
   }
   return vol;
 }
+
+//------------------------------------------
+
+double distanceSquared(const std::vector<double> &a, const std::vector<double> &b) 
+{
+  double d = 0.0;
+
+  for (size_t i = 0; i < a.size(); ++i)
+  {
+    double diff = a[i] - b[i];
+    d += diff * diff;
+  }
+
+  return d;
+}
+
+//------------------------------------------

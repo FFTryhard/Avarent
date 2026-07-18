@@ -1,13 +1,18 @@
 #include "engine.h"
+#include <pybind11/embed.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+#include <pybind11/eigen.h>
+
+namespace py = pybind11;
 #include "utils.h"
 #include <stdexcept>
 #include "rawprocessing2.h"
-#include "clusters.h"
 
 // All tuning parameters now come from ClientConfig (stored as this->config).
 // See client_config.h for definitions, bounds, and profile defaults.
 
-Engine::Engine(const ClientConfig &cfg) : config(cfg) {}
+// See client_config.h for definitions, bounds, and profile defaults.
 
 bool Engine::ready() { return output_ready; } // can we output?
 
@@ -50,43 +55,44 @@ void Engine::ingest(const std::vector<double> &row)
       std::cerr << "Index: " << iteration << std::endl;
     }
 
-    //new
+    // new
     NormalizerState state = in2.process(row);
-
-    
 
     // --- ONLINE G AND C (with k-spacing macro deltas) ---
     state_history.push_back(state);
     const int k_spacing = config.window_stride; // use stride (e.g. 20) as the macro window
-    if ((int)state_history.size() > k_spacing) {
-        state_history.pop_front();
+    if ((int)state_history.size() > k_spacing)
+    {
+      state_history.pop_front();
     }
 
     double G2 = 0.0;
     double C2 = 0.0;
 
-    if ((int)state_history.size() == k_spacing) {
-        const NormalizerState& past_state = state_history.front();
-        if (past_state.ready && state.ready) {
-            G2 = computeG(past_state.eigenvectors, state.eigenvectors, state.eigenvalues);
-            C2 = computeC(past_state.eigenvalues, state.eigenvalues);
-        }
+    if ((int)state_history.size() == k_spacing)
+    {
+      const NormalizerState &past_state = state_history.front();
+      if (past_state.ready && state.ready)
+      {
+        G2 = computeG(past_state.eigenvectors, state.eigenvectors, state.eigenvalues);
+        C2 = computeC(past_state.eigenvalues, state.eigenvalues);
+      }
     }
 
     auto z_g2 = g2_score.process(G2, RobustScore::Mode::Positive);
-    auto z_c2 = c2_score.process(C2, RobustScore::Mode::Signed);
+    auto z_c2 = c2_score.process(C2, RobustScore::Mode::Signed); // Was signed before
 
     double g2_norm = z_g2.valid ? z_g2.z : 0.0;
     double c2_norm = z_c2.valid ? z_c2.z : 0.0;
 
     g2_ema.update(g2_norm);
-    if (g2_ema.ready()) g2_norm = g2_ema.get();
+    if (g2_ema.ready())
+      g2_norm = g2_ema.get();
 
     c2_ema.update(c2_norm);
-    if (c2_ema.ready()) c2_norm = c2_ema.get();
+    if (c2_ema.ready())
+      c2_norm = c2_ema.get();
     // ----------------------
-
-    
 
     /*
 
@@ -113,33 +119,34 @@ void Engine::ingest(const std::vector<double> &row)
     {
       std::cerr << "Iteration: " << iteration << '\n';
 
-      //DATA FOR LLE
+      // DATA FOR LLE
       Eigen::MatrixXd final_LLE_data_matrix;
 
       auto data_std_no_pca = deque_to_vector(WINDOW);
       auto data_eigen_no_pca = dequeToEigenMatrix(WINDOW);
 
       final_LLE_data_matrix = data_eigen_no_pca;
-      if(getHeaders().size() >= 30){
+      if (getHeaders().size() >= 30)
+      {
         auto pca_result = PCA_Full(data_eigen_no_pca, config.pca_variance_retained);
         auto data_std = std::move(pca_result.projected);
         auto data_eigen = vectorToEigenMatrix(data_std);
-        
+
         final_LLE_data_matrix = data_eigen;
       }
 
-      if (containsNaN(data_std_no_pca) || containsINF(data_std_no_pca)  || WINDOW.empty())
+      if (containsNaN(data_std_no_pca) || containsINF(data_std_no_pca) || WINDOW.empty())
       {
         LOG("Window has NaN/Inf values, bailing analysis.");
         return;
       }
-      
+
       // PATTERN ANLYSIS
       int raw_start = iteration - config.window_size + 1;
       int raw_center = raw_start + config.window_size / 2;
 
       auto cov = covarianceMatrixx(data_std_no_pca);
-      
+
       double rolvol = mean(volatilityFromCov(cov));
       double eigratio = eigenvalueDominance(data_eigen_no_pca);
       double MAR = mean(eigenToStdVector(meanAbsoluteReturn(data_eigen_no_pca)));
@@ -156,21 +163,19 @@ void Engine::ingest(const std::vector<double> &row)
       auto LLE = largest_lyapunov_rosenstein(final_LLE_data_matrix, 1);
       double E = LLE.lle;
 
-      
-      
       auto z_e2 = e2_score.process(E2, RobustScore::Mode::Positive);
-      auto z_e =  e_score.process(E, RobustScore::Mode::Positive);
+      auto z_e = e_score.process(E, RobustScore::Mode::Positive);
 
       double e2_norm = z_e2.valid ? z_e2.z : 0.0;
       double e_norm = z_e.valid ? z_e.z : 0.0;
 
       e2_ema.update(e2_norm);
-      if (e2_ema.ready()) e2_norm = e2_ema.get();
+      if (e2_ema.ready())
+        e2_norm = e2_ema.get();
 
       e_ema.update(e_norm);
-      if (e_ema.ready()) e_norm = e_ema.get();
-
-      
+      if (e_ema.ready())
+        e_norm = e_ema.get();
 
       /*
       e2_ema.update(E2);
@@ -186,17 +191,42 @@ void Engine::ingest(const std::vector<double> &row)
       double e_norm = z_e.valid ? z_e.z : 0.0;
       */
 
+      // std::cout << raw_center << " " << g2_norm + 2.5 << " " << raw_center << " " << e_norm << " " << raw_center << " " << c2_norm << " " << std::endl;
 
-      //std::cout << raw_center << " " << g2_norm + 2.5 << " " << raw_center << " " << e_norm << " " << raw_center << " " << c2_norm << " " << std::endl;
-
-
-
-      htts.push_back({g2_norm, e_norm, c2_norm}); //if i smoothed it out too much, this should reveal clusters better
+      htts.push_back({g2_norm, e_norm, c2_norm}); // if i smoothed it out too much, this should reveal clusters better
 
       if (z_g2.valid && z_c2.valid && z_e.valid)
       {
-        auto detected_regime = classifyRegime(g2_norm, e_norm, c2_norm);
-        if (!state.ready) detected_regime = CurRegime::Neutral;
+        gec_window.push_back({g2_norm, e_norm, c2_norm});
+        if (gec_window.size() >= (size_t)config.hmmwindow)
+        {
+          try
+          {
+            py::gil_scoped_acquire gil;
+
+            std::cout << previous_means.rows()
+                      << " x "
+                      << previous_means.cols()
+                      << std::endl;
+
+            Eigen::MatrixXd matched = fit_and_match(gec_window, previous_means).cast<Eigen::MatrixXd>();
+
+            LOG(matched);
+
+            previous_means = matched;
+
+            gec_window.erase(gec_window.begin(), gec_window.begin() + config.hmmwindowstride);
+          }
+          catch (const py::error_already_set &e)
+          {
+            std::cerr << e.what() << std::endl;
+            throw;
+          }
+        }
+
+        auto detected_regime = classifyRegime(g2_norm, e_norm, c2_norm, reversetransform(previous_means));
+        if (!state.ready)
+          detected_regime = CurRegime::Neutral;
         auto current_regime_stable = updateRegime(detected_regime);
 
         // Regime age tracking
@@ -220,11 +250,9 @@ void Engine::ingest(const std::vector<double> &row)
 
         previous_regime = current_regime_stable;
 
-
-
         // --- PC1 signal classification ---
         // 3.1: Smooth the PC1 weights using EMA (reuses GEC_EMA_ALPHA)
-        Eigen::VectorXd pc1_raw = state.eigenvectors.col(state.eigenvalues.size()-1);
+        Eigen::VectorXd pc1_raw = state.eigenvectors.col(state.eigenvalues.size() - 1);
         if (!pc1_smoothed_init)
         {
           pc1_smoothed = pc1_raw;
@@ -240,8 +268,6 @@ void Engine::ingest(const std::vector<double> &row)
           pc1_smoothed = config.gec_ema_alpha * pc1_raw +
                          (1.0 - config.gec_ema_alpha) * pc1_smoothed;
         }
-
-
 
         // 3.2: Classify instruments by significance
         double mean_abs_w = pc1_smoothed.cwiseAbs().mean();
@@ -316,12 +342,12 @@ void Engine::ingest(const std::vector<double> &row)
           rationale += " acting against prevailing structure.";
         }
 
-        current_output.decision_regime = enum_to_string_regime(current_regime_stable); 
-        current_output.decision_action = interpret(current_regime_stable); //maybe add explanation later
+        current_output.decision_regime = enum_to_string_regime(current_regime_stable);
+        current_output.decision_action = interpret(current_regime_stable); // maybe add explanation later
         current_output.model_input_variables = getHeaders();
         current_output.model_raw_input = raw_vec;
-        //current_output.regime_confidence = r_confidence; //based on coordinate location cossim and or distance? comes later
-        //current_output.decision_regime_rationale = re-anta; 
+        // current_output.regime_confidence = r_confidence; //based on coordinate location cossim and or distance? comes later
+        // current_output.decision_regime_rationale = re-anta;
         current_output.regime_age = regime_age_counter;
         current_output.model_pc1_weights_smoothed = eigenToStdVector(pc1_smoothed);
 
@@ -378,3 +404,4 @@ CurRegime Engine::updateRegime(CurRegime detected_regime)
 
   return confirmed_regime;
 }
+

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <vector>
+#include "utils.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NormalizerState
@@ -41,12 +42,8 @@ inline double computeG(const Eigen::MatrixXd &V_prev,
                        const Eigen::VectorXd &eigenvalues)
 {
     // Fix: use largest eigenvalue ratio, not smallest
-    int n = eigenvalues.size();
-    double raw_dd = std::log(
-        (eigenvalues[n-1] / (eigenvalues[n-2] + 1e-12)) + 1e-12
-    );
-    // Normalize to [0,1] so scales match sin_norm signals
-    double directional_dominance = std::tanh(raw_dd / 2.0);
+    int n = eigenvalues.size(); 
+    double confidence = (eigenvalues[n-1] - eigenvalues[n-2]) + 1e-12 / eigenvalues[n-1];
 
     Eigen::MatrixXd U_overlap = V_prev.transpose() * V_curr;
     double sin_normMOS = wedin_theoremKGT1(U_overlap);
@@ -54,11 +51,8 @@ inline double computeG(const Eigen::MatrixXd &V_prev,
         Eigen::VectorXd(V_curr.col(n-1)),   // dominant eigenvector
         Eigen::VectorXd(V_prev.col(n-1))
     );
-
-    double clean_sin_normDS = sin_normDS * directional_dominance; //if λ1 and λ2 are almost identical, the data forms a perfect circle, meaning there is no point in tracking locking
-
-    // 15% Level (DD), 55% Full Subspace Rotation (MOS), 30% Primary Driver Rotation (DS)
-    return (directional_dominance * 0.15) + (sin_normMOS * 0.55) + (sin_normDS * 0.30); //look into the clean version later
+    //if λ1 and λ2 are almost identical, the data forms a perfect circle, meaning there is no point in tracking locking
+    return confidence * (0.5 * sin_normMOS + 0.5 * sin_normDS);
 }
 // C — rate of change of eigenvalue participation ratio (complexity delta).
 // Participation ratio PR = (Σλ)² / Σλ²  ∈ [1, dim].
@@ -79,7 +73,7 @@ inline double computeC(const Eigen::VectorXd &eig_prev,
         return (sum_e * sum_e) / sum_e2;
     };
 
-    return participationRatio(eig_curr) - participationRatio(eig_prev);
+    return participationRatio(eig_curr); /* - participationRatio(eig_prev); */
 }
 
 // E — instability / anomaly magnitude.
