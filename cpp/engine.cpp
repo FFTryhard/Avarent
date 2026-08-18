@@ -84,14 +84,6 @@ void Engine::ingest(const std::vector<double> &row)
 
     double g2_norm = z_g2.valid ? z_g2.z : 0.0;
     double c2_norm = z_c2.valid ? z_c2.z : 0.0;
-
-    g2_ema.update(g2_norm);
-    if (g2_ema.ready())
-      g2_norm = g2_ema.get();
-
-    c2_ema.update(c2_norm);
-    if (c2_ema.ready())
-      c2_norm = c2_ema.get();
     // ----------------------
 
     /*
@@ -155,48 +147,74 @@ void Engine::ingest(const std::vector<double> &row)
 
       WINDOW.pop_front(); // Stride = 1 (rolling daily window)
 
-      std::cerr << std::endl;
-      std::cerr << std::endl;
-
-      double E2 = computeE(state.maha);
-
       auto LLE = largest_lyapunov_rosenstein(final_LLE_data_matrix, 1);
       double E = LLE.lle;
-
-      auto z_e2 = e2_score.process(E2, RobustScore::Mode::Positive);
       auto z_e = e_score.process(E, RobustScore::Mode::Positive);
-
-      double e2_norm = z_e2.valid ? z_e2.z : 0.0;
       double e_norm = z_e.valid ? z_e.z : 0.0;
 
-      e2_ema.update(e2_norm);
-      if (e2_ema.ready())
-        e2_norm = e2_ema.get();
+      // 1. GEC raw -> z-scored (currently in g2_norm, e_norm, c2_norm)
+
+      // 2. calculate k-difference deltas of GEC (using unsmoothed z-scores)
+      gec_history.push_back({g2_norm, e_norm, c2_norm});
+      if ((int)gec_history.size() > config.window_stride)
+      {
+        gec_history.pop_front();
+      }
+
+      double dG_raw = 0.0, dE_raw = 0.0, dC_raw = 0.0;
+      if ((int)gec_history.size() == config.window_stride)
+      {
+        const auto &past_gec = gec_history.front();
+        dG_raw = g2_norm - past_gec[0];
+        dE_raw = e_norm - past_gec[1];
+        dC_raw = c2_norm - past_gec[2];
+      }
+
+      g2_ema.update(g2_norm);
+      if (g2_ema.ready())
+        g2_norm = g2_ema.get();
 
       e_ema.update(e_norm);
       if (e_ema.ready())
         e_norm = e_ema.get();
 
-      /*
-      e2_ema.update(E2);
-      if (e2_ema.ready()) E2 = e2_ema.get();
+      c2_ema.update(c2_norm);
+      if (c2_ema.ready())
+        c2_norm = c2_ema.get();
 
-      e_ema.update(E);
-      if (e_ema.ready()) E = e_ema.get();
+      dg_ema.update(dG_raw);
+      double dG = dg_ema.ready() ? dg_ema.get() : 0.0;
 
-      auto z_e2 = e2_score.process(E2, RobustScore::Mode::Positive);
-      auto z_e =  e_score.process(E, RobustScore::Mode::Positive);
+      de_ema.update(dE_raw);
+      double dE = de_ema.ready() ? de_ema.get() : 0.0;
 
-      double e2_norm = z_e2.valid ? z_e2.z : 0.0;
-      double e_norm = z_e.valid ? z_e.z : 0.0;
-      */
+      dc_ema.update(dC_raw);
+      double dC = dc_ema.ready() ? dc_ema.get() : 0.0;
 
-      // std::cout << raw_center << " " << g2_norm + 2.5 << " " << raw_center << " " << e_norm << " " << raw_center << " " << c2_norm << " " << std::endl;
-
-      htts.push_back({g2_norm, e_norm, c2_norm}); // if i smoothed it out too much, this should reveal clusters better
-
-      if (z_g2.valid && z_c2.valid && z_e.valid)
+      if (g2_ema.ready() && e_ema.ready() && c2_ema.ready() && dg_ema.ready() && de_ema.ready() && dc_ema.ready())
       {
+
+        htts.push_back({g2_norm, e_norm, c2_norm, dG, dE, dC});
+
+        std::vector<double> detected_regime = {0.25, 0.25, 0.25, 0.25};
+
+        rolcov.add({g2_norm, e_norm, c2_norm, dG, dE, dC});
+
+        if (rolcov.ready())
+        {
+          auto marketCov = vectorToEigenMatrix(rolcov.covariance());
+          marketCov += 1e-5 * Eigen::Matrix<double, 6, 6>::Identity();
+          Eigen::Matrix<double, 6, 6> invMarketCov = marketCov.inverse();
+          Eigen::Matrix<double, 6, 1> state = {g2_norm, e_norm, c2_norm, dG, dE, dC};
+          auto probs = classifyRegimesGlobalCov(state, invMarketCov, defaultPrototypesGlobalCov, 1.0); 
+          std::vector<double>vec(4);
+          for(int i = 0; i < probs.size(); i++) vec[i] = probs[i].probability;    
+          detected_regime = vec;
+        }
+                    
+        auto current_regime_stable = detected_regime;
+
+        /*
         gec_window.push_back({g2_norm, e_norm, c2_norm});
         if (gec_window.size() >= (size_t)config.hmmwindow)
         {
@@ -223,11 +241,15 @@ void Engine::ingest(const std::vector<double> &row)
             throw;
           }
         }
+        */
 
-        auto detected_regime = classifyRegime(g2_norm, e_norm, c2_norm, reversetransform(previous_means));
-        if (!state.ready)
-          detected_regime = CurRegime::Neutral;
-        auto current_regime_stable = updateRegime(detected_regime);
+        // auto detected_regime = classifyRegime(g2_norm, e_norm, c2_norm, reversetransform(previous_means));
+        // auto detected_regime = classifyRegime(g2_norm, e_norm, c2_norm);
+        //  if (!state.ready)
+        //   detected_regime = CurRegime::Neutral;
+        // auto current_regime_stable = updateRegime(detected_regime);
+
+        /*
 
         // Regime age tracking
         if (!regime_tracking_init)
@@ -249,6 +271,18 @@ void Engine::ingest(const std::vector<double> &row)
         }
 
         previous_regime = current_regime_stable;
+
+        */
+
+        /*
+
+        std::vector<double> x = {g2_norm, e_norm, c2_norm, dG, dE, dC};
+        auto detected_regime = softmaxRegimes(toEigenVector(x), default_prototypes3, 1.0);
+        if (!state.ready)
+          detected_regime = {0.25, 0.25, 0.25, 0.25};
+        auto current_regime_stable = detected_regime;
+
+        */
 
         // --- PC1 signal classification ---
         // 3.1: Smooth the PC1 weights using EMA (reuses GEC_EMA_ALPHA)
@@ -342,10 +376,11 @@ void Engine::ingest(const std::vector<double> &row)
           rationale += " acting against prevailing structure.";
         }
 
-        current_output.decision_regime = enum_to_string_regime(current_regime_stable);
-        current_output.decision_action = interpret(current_regime_stable); // maybe add explanation later
+        // current_output.decision_regime = enum_to_string_regime(current_regime_stable);
+        // current_output.decision_action = interpret(current_regime_stable); // maybe add explanation later
         current_output.model_input_variables = getHeaders();
         current_output.model_raw_input = raw_vec;
+        current_output.regimeWeights = current_regime_stable;
         // current_output.regime_confidence = r_confidence; //based on coordinate location cossim and or distance? comes later
         // current_output.decision_regime_rationale = re-anta;
         current_output.regime_age = regime_age_counter;
@@ -404,4 +439,3 @@ CurRegime Engine::updateRegime(CurRegime detected_regime)
 
   return confirmed_regime;
 }
-

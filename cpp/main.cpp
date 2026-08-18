@@ -781,20 +781,30 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
     // --- Regime-dependent Base Signal (shift-1: use history BEFORE today) ---
     std::vector<double> baseSig;
 
-    std::string currentRegime = snapshotReady ? snapshot.decision_regime : "Neutral";
+    //std::string currentRegime = snapshotReady ? snapshot.decision_regime : "Neutral";
+
+    std::vector<double> currentRegimeWeights = snapshotReady ? snapshot.regimeWeights : stratprobs;
+    std::cerr << std::endl;
+    std::cerr << std::endl;
+    std::cerr << std::endl;
+    LOG(toEigenVector(currentRegimeWeights));
+    std::cerr << std::endl;
+    std::cerr << std::endl;
+    std::cerr << std::endl;
+    std::string currentRegime = enum_to_string_regime(static_cast<CurRegime>(argmax(currentRegimeWeights)));
 
     regimeDays[currentRegime]++;
+
     if (currentRegime != previousRegime)
     {
       regimeTransitions[currentRegime]++;
       previousRegime = currentRegime;
     }
 
-    // std::string currentRegime = dumb_regime;
+    // std::string currentRegime = dumb_regime;   
     // std::string currentRegime = regime_labels[dist(gen)];
 
-    std::vector<std::vector<double>> baseSignals(4);
-
+    std::vector<std::vector<double>> baseSignals(4); //for equeal weight blend
     baseSignals[0] = longVolatilitySignal(returnHistory);
     baseSignals[1] = crossSectionalMomentumSignal(returnHistory);
     baseSignals[2] = trendFollowingSignal(returnHistory);
@@ -886,6 +896,7 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
     // std::vector<double> targetWBase = blendPortfolios(baseSignals, stratprobs);
     std::vector<double> targetWBase = equalWeightBlend(baseSignals);
     std::vector<double> targetWOverlay = baseSig; // Start from baseSig (overlay will re-normalize itself)
+    //std::vector<double> targetWOverlay = combineAllocations(baseSignals, currentRegimeWeights);
 
     // bool isEmergency = false;
 
@@ -1089,7 +1100,8 @@ void runBacktest(Engine &engine, const std::vector<std::string> &headers,
 
   for (int i = 0; i < engine.htts.size(); i++)
   {
-    std::cerr << "(" << engine.htts[i][0] << ", " << engine.htts[i][1] << ", " << engine.htts[i][2] << ")" << "\n";
+    std::cerr << "(" << engine.htts[i][0] << ", " << engine.htts[i][1] << ", " << engine.htts[i][2] << ", "
+              << engine.htts[i][3] << ", " << engine.htts[i][4] << ", " << engine.htts[i][5] << ")" << "\n";
   }
 
   */

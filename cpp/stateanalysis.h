@@ -21,80 +21,364 @@ enum class CurRegime
   Dispersed,
   Neutral
 };
+//=======================================
+struct PrototypeGlobalCov
+{
+    CurRegime regime;
 
+    Eigen::Matrix<double,6,1> mean;
+
+    double prior = 0.25;
+};
+const std::vector<PrototypeGlobalCov> defaultPrototypesGlobalCov =
+{
+    {
+        CurRegime::Trending,
+        (Eigen::Matrix<double,6,1>() <<
+            -1.0,
+            -1.0,
+            -1.0,
+             0.0,
+             0.0,
+             0.0).finished(),
+        0.25
+    },
+
+    {
+        CurRegime::Stressed,
+        (Eigen::Matrix<double,6,1>() <<
+             1.0,
+             1.8,
+             1.0,
+             1.0,
+             2.0,
+             1.0).finished(),
+        0.25
+    },
+
+    {
+        CurRegime::Dispersed,
+        (Eigen::Matrix<double,6,1>() <<
+             0.8,
+             0.2,
+             2.0,
+             0.6,
+             0.0,
+             1.5).finished(),
+        0.25
+    },
+
+    {
+        CurRegime::Neutral,
+        (Eigen::Matrix<double,6,1>() <<
+             0.0,
+             0.0,
+             0.0,
+             0.0,
+             0.0,
+             0.0).finished(),
+        0.25
+    }
+};
+inline double mahalanobisDistanceSquared(
+    const Eigen::Matrix<double, 6, 1>& x,
+    const PrototypeGlobalCov& prototype,
+    const Eigen::Matrix<double, 6, 6>& invCov)
+{
+    const Eigen::Matrix<double, 6, 1> d = x - prototype.mean;
+    return (d.transpose() * invCov * d)(0,0);
+}
+struct RegimeProbability
+{
+    CurRegime regime;
+    double probability;
+};
+inline std::vector<RegimeProbability> classifyRegimesGlobalCov(
+    const Eigen::Matrix<double, 6, 1>& state,
+    const Eigen::Matrix<double, 6, 6>& invMarketCov,
+    const std::vector<PrototypeGlobalCov>& prototypes,
+    double temperature = 1.0)
+{
+    std::vector<double> logits;
+    logits.reserve(prototypes.size());
+
+    for (const auto& p : prototypes)
+    {
+        const double d2 =
+            mahalanobisDistanceSquared(
+                state,
+                p,
+                invMarketCov);
+
+        logits.push_back(
+            -d2 / temperature +
+            std::log(p.prior));
+    }
+
+    const double maxLogit =
+        *std::max_element(logits.begin(), logits.end());
+
+    double sum = 0.0;
+
+    for (double& l : logits)
+    {
+        l = std::exp(l - maxLogit);
+        sum += l;
+    }
+
+    std::vector<RegimeProbability> result;
+    result.reserve(prototypes.size());
+
+    for (size_t i = 0; i < prototypes.size(); ++i)
+    {
+        result.push_back({
+            prototypes[i].regime,
+            logits[i] / sum
+        });
+    }
+
+    return result;
+}
+//=======================================
 struct Prototype
 {
-  CurRegime regime;
-  double G, E, C;
+    CurRegime regime;
+
+    Eigen::VectorXd mean;     // size 6
+    Eigen::MatrixXd invCov;   // 6x6
+
+    double prior;             // optional
 };
 
-inline Eigen::MatrixXd transform(const std::vector<Prototype>& ps)
+inline Eigen::MatrixXd diagonalInvCov(
+    double g,
+    double e,
+    double c,
+    double dg,
+    double de,
+    double dc)
 {
-    Eigen::MatrixXd means(ps.size(), 3);
+    Eigen::MatrixXd inv = Eigen::MatrixXd::Zero(6,6);
 
-    for (size_t i = 0; i < ps.size(); ++i)
-    {
-        means(i, 0) = ps[i].G;
-        means(i, 1) = ps[i].E;
-        means(i, 2) = ps[i].C;
-    }
+    inv(0,0)=1.0/(g*g);
+    inv(1,1)=1.0/(e*e);
+    inv(2,2)=1.0/(c*c);
 
-    return means;
+    inv(3,3)=1.0/(dg*dg);
+    inv(4,4)=1.0/(de*de);
+    inv(5,5)=1.0/(dc*dc);
+
+    return inv;
 }
 
-inline std::vector<Prototype> reversetransform(const Eigen::MatrixXd& means)
+inline Eigen::VectorXd makeVector(std::initializer_list<double> values)
 {
-    if (means.cols() != 3)
-    {
-        throw std::invalid_argument("Matrix must have exactly 3 columns.");
-    }
+    Eigen::VectorXd v(values.size());
 
-    std::vector<Prototype> ps(means.rows());
+    std::size_t i = 0;
+    for (double value : values)
+        v(static_cast<Eigen::Index>(i++)) = value;
 
-    for (Eigen::Index i = 0; i < means.rows(); ++i)
-    {
-        ps[i].G = means(i, 0);
-        ps[i].E = means(i, 1);
-        ps[i].C = means(i, 2);
-    }
-
-    return ps;
+    return v;
 }
 
-const std::vector<Prototype> default_prototypes = {
-    // Regime                G      E      C
-    {CurRegime::Trending,    0.50,  0.20, -1.00},  // stable factor, orderly, concentrated
-    {CurRegime::Stressed,    1.50,  1.90, -0.50},  // locked-in panic factor, extreme E, concentrated
-    {CurRegime::Dispersed,   1.80,  0.20,  2.00},  // flat spectrum -> eigengap noise -> high G, calm, dispersed
-    {CurRegime::Neutral,     0.20,  0.10,  0.20},  // near unconditional mean
+const std::vector<Prototype> default_prototypes3 =
+{
+
+// =====================================================
+// TRENDING
+// Locked geometry.
+// Low instability.
+// Low complexity.
+// Small velocity.
+// =====================================================
+
+{
+    CurRegime::Trending,
+
+    makeVector({
+        -1.0,   // G
+        -1.0,   // E
+        -1.0,   // C
+
+         0.0,   // dG
+         0.0,   // dE
+         0.0    // dC
+    }),
+
+    diagonalInvCov(
+        1.0,
+        1.0,
+        1.0,
+
+        0.5,
+        0.5,
+        0.5
+    ),
+
+    0.25
+},
+
+
+// =====================================================
+// STRESSED
+// Expanding unstable state.
+// Velocity matters.
+// E dominates.
+// =====================================================
+
+{
+    CurRegime::Stressed,
+
+    makeVector({
+         1.0,   // G
+         1.8,   // E
+         1.0,   // C
+
+         1.0,   // dG
+         2.0,   // dE
+         1.0    // dC
+    }),
+
+    diagonalInvCov(
+        1.0,
+        0.7,
+        1.0,
+
+        0.8,
+        0.5,
+        0.8
+    ),
+
+    0.25
+},
+
+
+// =====================================================
+// DISPERSED
+// Complexity explosion.
+// Geometry changes.
+// Lyapunov not necessarily extreme.
+// =====================================================
+
+{
+    CurRegime::Dispersed,
+
+    makeVector({
+         0.8,   // G
+         0.2,   // E
+         2.0,   // C
+
+         0.6,   // dG
+         0.0,   // dE
+         1.5    // dC
+    }),
+
+    diagonalInvCov(
+        1.0,
+        1.5,
+        0.5,
+
+        1.0,
+        1.5,
+        0.5
+    ),
+
+    0.25
+},
+
+
+// =====================================================
+// NEUTRAL
+// No strong structure.
+// Broad basin.
+// =====================================================
+
+{
+    CurRegime::Neutral,
+
+    makeVector({
+         0.0,
+         0.0,
+         0.0,
+
+         0.0,
+         0.0,
+         0.0
+    }),
+
+    diagonalInvCov(
+        2.0,
+        2.0,
+        2.0,
+
+        2.0,
+        2.0,
+        2.0
+    ),
+
+    0.25
+}
+
 };
 
-inline CurRegime classifyRegime(double G, double E, double C, const std::vector<Prototype> &current_protos)
+inline double distance2(
+    const Eigen::VectorXd& x,
+    const Prototype& p) 
 {
-  // E weighted 1.0x because it's the primary separating axis
-  auto dist = [](double g, double e, double c,
-                 const Prototype &p)
-  {
-    return std::sqrt(
-        1.0 * std::pow(g - p.G, 2) +
-        1.0 * std::pow(e - p.E, 2) + // E matters moren, so it was 2.0
-        1.0 * std::pow(c - p.C, 2));
-  };
+    Eigen::VectorXd d=x-p.mean;
 
-  double min_dist = std::numeric_limits<double>::max();
-  CurRegime best = CurRegime::Neutral;
-
-  for (const auto &p : current_protos)
-  {
-    double d = dist(G, E, C, p);
-    if (d < min_dist)
-    {
-      min_dist = d;
-      best = p.regime;
-    }
-  }
-  return best;
+    return d.transpose()
+           *
+           p.invCov
+           *
+           d;
 }
+
+inline std::vector<double> softmaxRegimes(
+    const Eigen::VectorXd& x,
+    const std::vector<Prototype>& prototypes,
+    double temperature)
+{
+    std::vector<double> logits;
+
+    for(auto& p:prototypes)
+    {
+        double d2 =
+            distance2(x,p);
+
+        logits.push_back(
+            -d2/temperature
+        );
+    }
+
+
+    double maxL =
+        *std::max_element(
+            logits.begin(),
+            logits.end()
+        );
+
+
+    double sum=0;
+
+    for(auto& l:logits)
+    {
+        l=std::exp(l-maxL);
+        sum+=l;
+    }
+
+
+    for(auto& l:logits)
+        l/=sum;
+
+
+    return logits;
+}
+
+//---------------------------
+
+
 
 inline size_t argmax(const std::vector<double> &v)
 {
@@ -134,6 +418,76 @@ inline std::vector<double> softmax(const std::vector<double> &v)
     x /= sum;
 
   return result;
+}
+
+inline double pref(double x, double mu, double sigma)
+{
+    const double d = (x - mu) / sigma;
+    return std::exp(-0.5 * d * d);
+}
+
+// Trending:
+// Low geometry drift
+// Low Lyapunov exponent
+// Low complexity
+inline double scoreTrending(double G, double E, double C)
+{
+    return
+        0.40 * pref(G, -1.2, 0.8) +
+        0.35 * pref(E, -1.2, 0.8) +
+        0.25 * pref(C, -1.0, 0.9);
+}
+
+// Stressed:
+// Geometry becoming unstable
+// Positive Lyapunov
+// Moderate-high complexity
+inline double scoreStressed(double G, double E, double C)
+{
+    return
+        0.30 * pref(G, 1.0, 0.9) +
+        0.45 * pref(E, 1.5, 0.8) +
+        0.25 * pref(C, 0.8, 0.9);
+}
+
+// Dispersed:
+// Complexity dominates
+// Geometry somewhat elevated
+// Lyapunov not necessarily large
+inline double scoreDispersed(double G, double E, double C)
+{
+    return
+        0.25 * pref(G, 0.8, 0.9) +
+        0.15 * pref(E, 0.0, 1.2) +
+        0.60 * pref(C, 2.0, 0.8);
+}
+
+// Neutral:
+// Everything around the center
+inline double scoreNeutral(double G, double E, double C)
+{
+    return
+        0.33 * pref(G, 0.0, 0.8) +
+        0.33 * pref(E, 0.0, 0.8) +
+        0.34 * pref(C, 0.0, 0.8);
+}
+
+inline CurRegime classifyRegime(double G, double E, double C)
+{
+    std::vector<double> scores = {
+        scoreTrending(G, E, C),
+        scoreStressed(G, E, C),
+        scoreDispersed(G, E, C),
+        scoreNeutral(G, E, C)
+    };
+
+    int best = argmax(scores);
+    int second = second_argmax(scores);
+
+    if (scores[best] - scores[second] < 0.10)
+        return CurRegime::Neutral;
+
+    return static_cast<CurRegime>(best);
 }
 
 // SOFTMAX PROBABLY BETTER

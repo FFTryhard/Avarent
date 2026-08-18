@@ -27,6 +27,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include "python_runtime.h"
+#include "rollingcov.h"
 
 #define DATA(x) std::cout << x << '\n';
 #define LOG(x) std::cerr << x << std::endl;
@@ -44,6 +45,7 @@ struct sysOutput
   std::vector<std::string> model_input_variables;
   std::vector<double> model_raw_input;
   std::vector<double> model_pc1_weights_smoothed;
+  std::vector<double> regimeWeights;
 };
 
 class Engine
@@ -77,6 +79,7 @@ public:
   {
     std::cout << "Engine: start" << std::endl;
 
+    /*
     py::module_ sys = py::module_::import("sys");
 
     std::cout << "Engine: imported sys" << std::endl;
@@ -118,6 +121,7 @@ public:
     std::cout << "Engine: got function" << std::endl;
 
     previous_means = transform(default_prototypes);
+    */
 
     std::cout << "Engine: finished" << std::endl;
   }
@@ -135,7 +139,7 @@ public:
   sysOutput getOutput();
 
   // tempo
-  std::vector<std::vector<double>> htts;
+  std::deque<std::vector<double>> htts;
 
 private:
   // Config — declared first so subsequent members can reference it
@@ -167,6 +171,8 @@ private:
   bool headers_are_set = false;
   bool regime_init = false;
 
+  RollingCovariance rolcov{200, 6}; //stateanalysis.h mahalanobis global
+
   CurRegime confirmed_regime;
   CurRegime regime_candidate;
 
@@ -194,6 +200,7 @@ private:
 
   EMA g2_ema{config.gec_ema_alpha}, e2_ema{config.gec_ema_alpha}, c2_ema{config.gec_ema_alpha};
   EMA e_ema{config.gec_ema_alpha};
+  EMA dg_ema{config.gec_ema_alpha}, de_ema{config.gec_ema_alpha}, dc_ema{config.gec_ema_alpha};
 
   // aux deltas
   ScalarBuffer_ ddelta_buff, dde_delta_buff;
@@ -222,9 +229,15 @@ private:
 
   sysOutput current_output;
 
+  /*
+
   py::object fit_and_match;
   Eigen::MatrixXd previous_means;              // K x 3
   std::vector<std::vector<double>> gec_window; // N x 3
+
+  */ 
+
+  std::deque<std::array<double, 3>> gec_history; // for k-spacing GEC deltas
 
   // void runHMM(const std::vector<std::array<double, 3>>& data);
 };
