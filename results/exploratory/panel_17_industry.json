@@ -1,0 +1,114 @@
+{
+  "F_surrogate": {
+    "draws": 499,
+    "null_median": 1.295142748392771,
+    "observed_median": 1.1946180008509448,
+    "raw_p": 0.002
+  },
+  "H2": {
+    "alert_metric_intervals_95": {
+      "precision_M1": [
+        0.20227678643913685,
+        0.7777047318286251
+      ],
+      "precision_M1_F": [
+        0.19390313906764556,
+        0.7773504273504274
+      ],
+      "recall_M1": [
+        0.07551304686097313,
+        0.31603333333333333
+      ],
+      "recall_M1_F": [
+        0.07601464594353997,
+        0.31113822766718824
+      ]
+    },
+    "alert_rate_5pct": {
+      "EWMA": {
+        "alert_rate": 0.050058320373250385,
+        "alerts": 515,
+        "precision": 0.28932038834951457,
+        "recall": 0.11778656126482213
+      },
+      "M1": {
+        "alert_rate": 0.050058320373250385,
+        "alerts": 515,
+        "precision": 0.5320388349514563,
+        "recall": 0.216600790513834
+      },
+      "M1_F": {
+        "alert_rate": 0.050058320373250385,
+        "alerts": 515,
+        "precision": 0.5223300970873787,
+        "recall": 0.2126482213438735
+      }
+    },
+    "anchor_count": 10288,
+    "auc": {
+      "EWMA": 0.685515233577432,
+      "M1": 0.7100840671117596,
+      "M1_F": 0.6863910805017831
+    },
+    "auc_intervals_95": {
+      "EWMA": [
+        0.5938971022240047,
+        0.7783084123242192
+      ],
+      "M1": [
+        0.6144643556210517,
+        0.8145075550753563
+      ],
+      "M1_F": [
+        0.5899814044597207,
+        0.7917718574343525
+      ],
+      "delta_auc_M1_F": [
+        -0.0519592728071088,
+        -0.0012131258870674393
+      ]
+    },
+    "bootstrap_draws_requested": 399,
+    "bootstrap_redraws": 0,
+    "bootstrap_replicates_used": 399,
+    "delta_auc_M1_F": -0.02369298660997654,
+    "event_clusters": 22,
+    "event_day_count": 1265,
+    "no_skill_auc": 0.5,
+    "status": "estimated"
+  },
+  "dates": {
+    "end": "2026-09-30",
+    "start": "1926-07-01",
+    "test_start": "1970-01-01"
+  },
+  "derived_time_series_hashes_only": true,
+  "estimated_parameter_boundaries": [],
+  "event_onsets_matched_within_120_sessions": 19,
+  "event_overlap_share_of_17_panel": 0.8636363636363636,
+  "panel_dimensions": 17,
+  "portfolio_labels": [
+    "Food",
+    "Mines",
+    "Oil",
+    "Clths",
+    "Durbl",
+    "Chems",
+    "Cnsum",
+    "Cnstr",
+    "Steel",
+    "FabPr",
+    "Machn",
+    "Cars",
+    "Trans",
+    "Utils",
+    "Rtail",
+    "Finan",
+    "Other"
+  ],
+  "primary_10_industry_event_clusters": 21,
+  "selected_lambda": 0.998,
+  "source": "17 U.S. industry portfolios; aggregation check, not an independent market replication",
+  "test_event_clusters": 22,
+  "tier": "post_freeze_exploratory"
+}

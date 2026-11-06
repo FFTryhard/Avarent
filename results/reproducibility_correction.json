@@ -1,0 +1,12 @@
+{
+  "tier": "frozen",
+  "supersedes": "The compiler field in results/reproducibility.json; the Visual Studio generator does not store compiler ID and version in CMakeCache.txt.",
+  "compiler": "MSVC 19.50.35721.0",
+  "compiler_path": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.50.35717\\bin\\Hostx64\\x64\\cl.exe",
+  "compiler_sha256": "5b0741ee910ac72235cc0b6cef1b1d0e79aeedf4fe761fa439a7d3b157747cd7",
+  "visual_studio_generator": "Visual Studio 18 2026",
+  "msbuild": "18.0.5",
+  "msbuild_path": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe",
+  "msbuild_sha256": "f7ba581309577a8cf45b72217cdaeb527b38a6a87e87e0edadae79dc9469cf9f",
+  "verified_from": "CMake build output and cl.exe file version"
+}

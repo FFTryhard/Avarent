@@ -1,0 +1,65 @@
+\newcommand{\GateRows}{
+U & UKF error 1.2e-14; finite difference 9.8e-11 & $\leq 1\times10^{-10}$; $\leq 1\times10^{-9}$ & pass \\
+E1 & 10/10 assets & $\geq 8/10$ and no box boundary & pass \\
+G1 & error 0.03818; correlation 0.8608 & $\leq 0.35$; $\geq 0.5$ & pass \\
+G2 & rotation 0.2618; log amplification 2.312 & $\geq 0.15$; $\geq 0.15$ & pass \\
+G3 & RMSE improvement 59.27\% & $\geq 5\%$ & pass \\
+G4 & median rho 0.988; median F5 1.071; max F5 1.329; direct gap 0.08337 & $\leq 1.05$; $\leq 3$; $\leq 1000$; $\leq 0.5$ & pass \\
+Attempts & 5 & at most 5 & pass \\
+}
+\newcommand{\HtwoRows}{
+M0+F vs M0 & -0.01366 & [-0.02799, 0.001076] & 0.088 & 21 & 10793 \\
+M1+F vs M1 & -0.008816 & [-0.02427, 0.004163] & 0.17 & 21 & 10793 \\
+}
+\newcommand{\HoneRows}{
+(a) Surrogates & $p_R=0.844$, $p_H=0.984$, $p_F=0.006$ & $p\leq 0.01$ for all & fail \\
+(b) Pre-onset & raw/Holm: R: 0.385/1; H: 0.814/1; F: 0.825/1 & adjusted $p<0.05$ for one or more & fail \\
+(c) Redundancy & 0.4793 < 0.7 & maximum absolute Spearman correlation & pass \\
+(d) Dimension & 4 components & $\geq 3$ for 90\% & pass \\
+}
+\newcommand{\RobustnessRows}{
+Primary, lambda 0.998 & 0.1303 & 9.974 & 1.08 \\
+Alternate lambda 0.995 & 0.2319 & 9.919 & 1.199 \\
+EMA before RLS & 0.198 & 9.99 & 1.254 \\
+Horizon tau 20 & -- & -- & 1.251 \\
+}
+\newcommand{\DiagnosticRows}{
+Wedin median singular gap & 0.006579 & Subspace separation \\
+Wedin median perturbation norm & 0.02732 & Map change over lag \\
+Informative Wedin share & 2.53\% & Bound below one \\
+F5 median and interquartile range & 1.08; [1.04, 1.127] & Test-period distribution \\
+}
+\newcommand{\GateDefinitionRows}{
+U & Numerical equivalence and local-Jacobian checks & UKF/Kalman error $\leq 1\times10^{-10}$; finite-difference error $\leq 1\times10^{-9}$ \\
+E1 & Variance-parameter recovery across assets & At least 8/10 assets; $|\Delta\phi|\leq 0.05$; $q$ ratio $\leq 2$; no box-boundary estimate \\
+G1 & Recovery of a planted heterogeneous transition map & Relative Frobenius error $\leq 0.35$; off-diagonal correlation $\geq 0.5$ \\
+G2 & Separation of rotating and amplifying synthetic regimes & Rotation contrast $\geq 0.15$ radians; log-amplification contrast $\geq 0.15$; stationary rotation $\leq 1\times10^{-10}$ \\
+G3 & Held-out filtering improvement over a constant-state comparator & Relative RMSE improvement $\geq 5\%$ \\
+G4 & Historical boundedness and direct-RLS comparison & Median $\rho\leq 1.05$; median $F_5\leq 3$; maximum $F_5\leq 1000$; direct-RLS relative gap $\leq 0.5$ \\
+}
+\newcommand{\HashRows}{
+Source archive & \shortstack[l]{\texttt{4c79bad80b6f4eee9d08e649ce223d1c}\\\texttt{51aadd65043b65baca50b54981d38d25}} \\
+Extracted member & \shortstack[l]{\texttt{01cfe3d5e54f6ddfcc3dc84fb793f10f}\\\texttt{6b0218fe59f780969f4dca84e72e823e}} \\
+Derived returns & \shortstack[l]{\texttt{84f596454c562a0e299068baf8ebdfde}\\\texttt{e35f2984aed979c6b77f3bd9900338d5}} \\
+Frozen study JSON & \shortstack[l]{\texttt{732f6b8b15661ec9b176489c989b5ccb}\\\texttt{a4c09d453d24597aee78c430cdc0d0ae}} \\
+Analysis plan & \shortstack[l]{\texttt{7ea3f2c36f7150e3a13478dbfe6b7205}\\\texttt{e31d0934132d04eb6087935fe5688388}} \\
+Post-freeze plan & \shortstack[l]{\texttt{f6b3ebc6ed9598f5f3b88c8e742ba4ea}\\\texttt{7e2682245d04d757dc045ec778872647}} \\
+Block-length plan & \shortstack[l]{\texttt{6fd373bd60d5857abe54ce6066fa2a07}\\\texttt{3c37906422c85c2d09b4bd400be55338}} \\
+Haar dependence plan & \shortstack[l]{\texttt{d4bf5aeb661a07860210f01fc384be0a}\\\texttt{25d8c4119d186ba018bb579c16f65ee6}} \\
+F precision plan & \shortstack[l]{\texttt{311a60d6715f6fe5551df3b8e4cd2f0f}\\\texttt{213d3717e46fbc877a53ac64448731ad}} \\
+F precision runner & \shortstack[l]{\texttt{d41ea3e016e8134629a0508b18212fb5}\\\texttt{4bf321ea2e0d3bae833b9eb956123a23}} \\
+F primary precision output & \shortstack[l]{\texttt{00e87447b032b375f2720deebbf89a09}\\\texttt{21d8436445122608e9bd3f00c14788cb}} \\
+Zero-variant precision output & \shortstack[l]{\texttt{680477b57b1781a21916d3ac704f7bb9}\\\texttt{1923ddca1f641c7194264b88bd18805f}} \\
+Subperiod precision output & \shortstack[l]{\texttt{9a97dd778315972ddcd1713e89ea1dc2}\\\texttt{fba8f87e633cc7df99696c1ed7a0a297}} \\
+Lambda-grid precision output & \shortstack[l]{\texttt{34541764647afdc196e126f3cd94458c}\\\texttt{fc354ff20874e02b9ccffc9ddf8d4e02}} \\
+F precision comparison & \shortstack[l]{\texttt{353db57bd795a5c2bb31e2830ea56f61}\\\texttt{1451247116aa0c171fc3facaa4f6320e}} \\
+Protocol amendment log & \shortstack[l]{\texttt{246b0e9328a66b91a0238d400a8e01ff}\\\texttt{093b836e0515a3a8acc1f9771ec991c5}} \\
+Protocol & \shortstack[l]{\texttt{a860e120e56490bcfe14675241d33f59}\\\texttt{58929c0e78747a8da334c79c7fa311c0}} \\
+17-industry source archive & \shortstack[l]{\texttt{c20b1ccb5bc22b7137938854499f81c7}\\\texttt{4a88694e95af224bf8d0189c0f846f34}} \\
+17-industry extracted member & \shortstack[l]{\texttt{3e30b7e2a5ef30c42c090fba656d023d}\\\texttt{078fe96e092c6517332b58bd143e0cd7}} \\
+17-industry derived returns & \shortstack[l]{\texttt{cd1b005e90cb6beddd40e3b50c23c180}\\\texttt{41a4d1ed1216be6fe79e9e416057ee9b}} \\
+Frozen core executable & \shortstack[l]{\texttt{b0057ea8aa410408ff2ffad3d72940b0}\\\texttt{8687d08bcf89b47f899f9acb71fca3de}} \\
+Exploratory core source & \shortstack[l]{\texttt{873d59d924e9711be31a6d2ddfd56dcd}\\\texttt{84402059b4cd4cc4d71badf33e303eb8}} \\
+Exploratory core executable & \shortstack[l]{\texttt{73bfa47c9347ed3d0148492d9bdf1619}\\\texttt{4da33d1df68ec51a827c7712b44b741b}} \\
+Exploratory analysis script & \shortstack[l]{\texttt{5d03c62d1f7ab342cc6697fa426431f0}\\\texttt{c965ea7f1ca62f66256d9d52d2eca9c2}} \\
+}

@@ -1,0 +1,31 @@
+{
+  "draws": 4999,
+  "method": "F-only circular block shuffle; R and H raw probabilities remain from the valid 499-draw analysis and are included in the recomputed Holm family.",
+  "minimum_attainable_empirical_p": 0.0002,
+  "precision_plan_sha256": "311a60d6715f6fe5551df3b8e4cd2f0f213d3717e46fbc877a53ac64448731ad",
+  "previous_frozen_499_draw_result": {
+    "draws": 499,
+    "holm_adjusted_p": 0.006,
+    "raw_p": 0.002
+  },
+  "rerun": {
+    "draws": 4999,
+    "holm_adjusted_p": 0.0036,
+    "null_median_F": 1.1184385876458807,
+    "observed_median_F": 1.0803128600649363,
+    "p_R_H_F_holm": [
+      0.844,
+      0.984,
+      0.0036
+    ],
+    "p_R_H_F_raw_used_for_Holm": [
+      0.422,
+      0.984,
+      0.0012
+    ],
+    "raw_p": 0.0012,
+    "reused_R_H_draws": 499,
+    "seed": 20261107
+  },
+  "tier": "post_freeze_exploratory"
+}

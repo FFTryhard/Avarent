@@ -1,0 +1,20 @@
+{
+  "autocorrelation": {
+    "effective_n": 48.05954364305505,
+    "integrated_autocorrelation_time": 297.71402130381256
+  },
+  "block_length_sessions": 250,
+  "bootstrap_replicates": 1000,
+  "construction": "The leading rolling covariance eigenvector is fixed in every null subspace; the remaining dimensions are random orthonormal directions in its orthogonal complement.",
+  "date_count": 14308,
+  "date_indices_are_derived": true,
+  "draws_per_date": 1000,
+  "haar_median_percentile_frozen": 0.059,
+  "mean_percentile": 0.2780075482247693,
+  "median_percentile": 0.181,
+  "median_percentile_block_bootstrap_95": [
+    0.13897500000000002,
+    0.250025
+  ],
+  "tier": "post_freeze_exploratory"
+}

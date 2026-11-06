@@ -1,0 +1,89 @@
+{
+  "created_utc": "2026-11-06T01:13:05Z",
+  "frozen_inputs": {
+    "primary_study_sha256": "732f6b8b15661ec9b176489c989b5ccba4c09d453d24597aee78c430cdc0d0ae",
+    "primary_analysis_plan_sha256": "7ea3f2c36f7150e3a13478dbfe6b7205e31d0934132d04eb6087935fe5688388",
+    "primary_protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0"
+  },
+  "status": "post-freeze exploratory addendum",
+  "primary_files_must_remain_unchanged": [
+    "results/study.json",
+    "results/analysis_plan.json",
+    "results/analysis_plan.sha256",
+    "results/protocol.json",
+    "results/protocol.sha256",
+    "results/protocol_hash.json",
+    "results/validation.json",
+    "results/reproducibility.json"
+  ],
+  "analyses": {
+    "pre_onset_reporting": {
+      "method": "Report observed raw date-placebo probabilities beside the Holm-adjusted probabilities for R, H, and F; do not alter the frozen statistic or verdict.",
+      "resamples": 1000,
+      "family": "R, H, F"
+    },
+    "zero_returns": {
+      "periods": {
+        "estimation": ["1926-01-01", "1949-12-31"],
+        "calibration": ["1950-01-01", "1969-12-31"],
+        "test": ["1970-01-01", "2026-09-30"]
+      },
+      "variants": [
+        {"name": "larger variance floor", "variance_floor": 1e-6, "zero_treatment": "observed"},
+        {"name": "zero as missing observation", "variance_floor": 1e-8, "zero_treatment": "skip per-asset likelihood and Kalman measurement update"}
+      ],
+      "scope": "Rerun parameter estimation, filtering, R/H/F diagnostics, H1 surrogate/placebo checks, and H2 primary prediction. Keep source zero returns in the equal-weight target and stress series."
+    },
+    "factor_aligned_direction_null": {
+      "draws_per_date": 1000,
+      "rank": 3,
+      "construction": "Fix the leading rolling-covariance eigenvector and draw the other rank-minus-one directions uniformly in its orthogonal complement.",
+      "dependence": "Circular 250-session block bootstrap over date-wise angle percentiles; report a 95% interval and integrated-autocorrelation effective sample size.",
+      "haar_reference": "Retain the frozen Haar comparison as the original reference."
+    },
+    "h2_sensitivity": {
+      "drawdown_thresholds": [-0.1, -0.15, -0.2],
+      "forecast_horizons_sessions": [20, 60, 120],
+      "logistic_C": [0.1, 1.0, 10.0],
+      "forgetting_factor": 0.998,
+      "refit_every_sessions": 252,
+      "purge_sessions": 60,
+      "outputs": ["event_clusters", "anchors", "AUC levels", "M1+F minus M1 AUC", "paired circular-block 95% intervals"]
+    },
+    "refit_aware_h2_uncertainty": {
+      "replicates": 399,
+      "block_length_sessions": 250,
+      "method": "At each original expanding-window refit, draw training blocks only from observations available before the cutoff, refit the logistic models, draw test blocks from the out-of-sample window, and recompute paired AUC levels and increments.",
+      "scope_limit": "This resamples logistic fitting and test observations; it does not refit the volatility filter or RLS state path."
+    },
+    "prediction_reference_and_alert_metrics": {
+      "ewma_half_life_sessions": 20,
+      "alert_rate": 0.05,
+      "outputs": ["no-skill AUC=0.5", "EWMA-volatility-only AUC", "precision and recall at a 5% alert rate", "block-bootstrap intervals"]
+    },
+    "secondary_panels": {
+      "17_industry": {
+        "source": "Kenneth R. French Data Library, 17 Industry Portfolios Daily",
+        "surrogate_draws": 499,
+        "h2_threshold": -0.15,
+        "h2_horizon_sessions": 60,
+        "h2_logistic_C": 1.0,
+        "interpretation": "Aggregation check using the same underlying U.S. stock universe; drawdown events overlap substantially with the ten-industry panel and do not add independent event power."
+      },
+      "developed_ex_us_industry": {
+        "decision": "Do not substitute non-industry portfolios for an industry panel. The official Library lists U.S. industry portfolios; its daily developed ex-U.S. series are sorted by size and book-to-market, not industry."
+      }
+    },
+    "subperiod_f_surrogate": {
+      "periods": [["1970-01-01", "1999-12-31"], ["2000-01-01", "2026-09-30"]],
+      "draws_per_period": 499,
+      "block_length_sessions": 60,
+      "adjustment": "Holm across the two prespecified subperiod probabilities."
+    },
+    "lambda_grid": {
+      "values": [0.99, 0.995, 0.998, 0.999],
+      "outputs": ["median R", "median H", "R/H distribution summaries", "F surrogate probability"]
+    },
+    "citation_policy": "Add a citation only when its DOI and publisher record have been verified; omit unverified references."
+  }
+}

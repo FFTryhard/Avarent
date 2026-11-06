@@ -1,0 +1,40 @@
+{
+  "event_thresholds": {
+    "-0.1": {
+      "anchor_count": 9426,
+      "delta_auc_M1_F": -0.017066970103762957,
+      "event_clusters": 23
+    },
+    "-0.2": {
+      "anchor_count": 12727,
+      "delta_auc_M1_F": -0.0012298037333634548,
+      "event_clusters": 10
+    }
+  },
+  "moderate_regime": {
+    "anchor_count": 3053,
+    "correlation_threshold": 0.7237864816740011,
+    "event_clusters": 0,
+    "status": "not estimable",
+    "vol_threshold": 0.09509892161656422
+  },
+  "tier": "frozen",
+  "variants": {
+    "alternative_lambda": {
+      "lambda": 0.995,
+      "median_F5": 1.1990327058730932,
+      "median_H": 9.919389119485274,
+      "median_R": 0.23189303671206898
+    },
+    "ema_before_rls": {
+      "half_life_days": 10,
+      "median_F5": 1.2544750017847504,
+      "median_H": 9.989872426959582,
+      "median_R": 0.19796458305427897
+    },
+    "horizon_20": {
+      "median_F20": 1.251247996538865,
+      "median_rho_power_20": 0.8038681888306626
+    }
+  }
+}

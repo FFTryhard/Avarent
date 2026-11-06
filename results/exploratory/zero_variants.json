@@ -1,0 +1,283 @@
+{
+  "F_surrogate_draws": 4999,
+  "baseline_event_placebo": {
+    "explanation": "Holm-adjusted values equal one because all three raw placebo probabilities are large; they are not evidence that each observed statistic equals its placebo median.",
+    "holm_adjusted_p_R_H_F": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "raw_p_R_H_F": [
+      0.38461538461538464,
+      0.8141858141858141,
+      0.8251748251748252
+    ]
+  },
+  "multiplicity_note": "R and H raw probabilities are retained from the prior 499-draw runs; Holm values are recomputed with the 4,999-draw F probability.",
+  "precision_plan_sha256": "311a60d6715f6fe5551df3b8e4cd2f0f213d3717e46fbc877a53ac64448731ad",
+  "tier": "post_freeze_exploratory",
+  "variants": [
+    {
+      "boundary_assets_in_estimation": [],
+      "h1": {
+        "event_placebo_null_medians": {
+          "F": 1.16148059299018,
+          "H": 9.983713952550087,
+          "R": 0.17674804168977207
+        },
+        "event_placebo_observed_means": {
+          "F": 1.1652845979879811,
+          "H": 9.983751640262378,
+          "R": 0.19055568869562098
+        },
+        "event_placebo_p_holm": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "event_placebo_p_raw": [
+          0.3546453546453546,
+          0.962037962037962,
+          0.7922077922077922
+        ],
+        "precision_plan_sha256": "311a60d6715f6fe5551df3b8e4cd2f0f213d3717e46fbc877a53ac64448731ad",
+        "surrogate_draws": 499,
+        "surrogate_draws_by_signal": {
+          "F": 4999,
+          "H": 499,
+          "R": 499
+        },
+        "surrogate_f_holm_p": 0.0804,
+        "surrogate_f_raw_p": 0.0268,
+        "surrogate_null_medians": {
+          "F": 1.192204971566186,
+          "H": 9.984166929611035,
+          "R": 0.14747898252576652
+        },
+        "surrogate_observed_medians": {
+          "F": 1.1596438590920943,
+          "H": 9.984134331981894,
+          "R": 0.14259279282573478
+        },
+        "surrogate_p_holm": [
+          0.748,
+          0.98,
+          0.0804
+        ],
+        "surrogate_p_raw": [
+          0.374,
+          0.98,
+          0.0268
+        ],
+        "test_event_clusters": 21
+      },
+      "h2": {
+        "alert_metric_intervals_95": {
+          "precision_M1": [
+            0.35171123670514426,
+            0.7419121063730922
+          ],
+          "precision_M1_F": [
+            0.33568001253419155,
+            0.7256630296674264
+          ],
+          "recall_M1": [
+            0.1773235046526972,
+            0.3808064481344475
+          ],
+          "recall_M1_F": [
+            0.17180273753055408,
+            0.3754468728177374
+          ]
+        },
+        "alert_rate_5pct": {
+          "EWMA": {
+            "alert_rate": 0.050032428425831554,
+            "alerts": 540,
+            "precision": 0.3962962962962963,
+            "recall": 0.18104906937394247
+          },
+          "M1": {
+            "alert_rate": 0.050032428425831554,
+            "alerts": 540,
+            "precision": 0.6055555555555555,
+            "recall": 0.2766497461928934
+          },
+          "M1_F": {
+            "alert_rate": 0.050032428425831554,
+            "alerts": 540,
+            "precision": 0.5925925925925926,
+            "recall": 0.2707275803722504
+          }
+        },
+        "anchor_count": 10793,
+        "auc": {
+          "EWMA": 0.7476579201672646,
+          "M1": 0.7410068060409489,
+          "M1_F": 0.7338842214249359
+        },
+        "auc_intervals_95": {
+          "EWMA": [
+            0.6465202383539613,
+            0.8314923283137177
+          ],
+          "M1": [
+            0.6048110429559124,
+            0.8450801453163784
+          ],
+          "M1_F": [
+            0.6054693369018551,
+            0.8374069526468989
+          ],
+          "delta_auc_M1_F": [
+            -0.015526728746365775,
+            0.0017795743313727692
+          ]
+        },
+        "bootstrap_draws_requested": 399,
+        "bootstrap_redraws": 0,
+        "bootstrap_replicates_used": 399,
+        "delta_auc_M1_F": -0.007122584616013006,
+        "event_clusters": 21,
+        "event_day_count": 1182,
+        "no_skill_auc": 0.5,
+        "status": "estimated"
+      },
+      "tier": "post_freeze_exploratory",
+      "variance_floor": 1e-06,
+      "variant": "variance_floor_1e-6",
+      "zero_as_missing": false
+    },
+    {
+      "boundary_assets_in_estimation": [],
+      "h1": {
+        "event_placebo_null_medians": {
+          "F": 1.0960089372327195,
+          "H": 9.975212975687963,
+          "R": 0.1608685074027238
+        },
+        "event_placebo_observed_means": {
+          "F": 1.097409446845633,
+          "H": 9.97528313926822,
+          "R": 0.16352537889015278
+        },
+        "event_placebo_p_holm": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "event_placebo_p_raw": [
+          0.8411588411588412,
+          0.9560439560439561,
+          0.9140859140859141
+        ],
+        "precision_plan_sha256": "311a60d6715f6fe5551df3b8e4cd2f0f213d3717e46fbc877a53ac64448731ad",
+        "surrogate_draws": 499,
+        "surrogate_draws_by_signal": {
+          "F": 4999,
+          "H": 499,
+          "R": 499
+        },
+        "surrogate_f_holm_p": 0.030600000000000002,
+        "surrogate_f_raw_p": 0.0102,
+        "surrogate_null_medians": {
+          "F": 1.1223400757241353,
+          "H": 9.975841688621927,
+          "R": 0.12861257732938833
+        },
+        "surrogate_observed_medians": {
+          "F": 1.0928888042654834,
+          "H": 9.976009896340155,
+          "R": 0.1307017677660809
+        },
+        "surrogate_p_holm": [
+          1.0,
+          1.0,
+          0.030600000000000002
+        ],
+        "surrogate_p_raw": [
+          0.618,
+          0.882,
+          0.0102
+        ],
+        "test_event_clusters": 21
+      },
+      "h2": {
+        "alert_metric_intervals_95": {
+          "precision_M1": [
+            0.34990809478790513,
+            0.7262876118189213
+          ],
+          "precision_M1_F": [
+            0.3308490454720473,
+            0.7065695437053328
+          ],
+          "recall_M1": [
+            0.17960275970845016,
+            0.3865739282411877
+          ],
+          "recall_M1_F": [
+            0.17378881010705566,
+            0.37229072053771894
+          ]
+        },
+        "alert_rate_5pct": {
+          "EWMA": {
+            "alert_rate": 0.050032428425831554,
+            "alerts": 540,
+            "precision": 0.3962962962962963,
+            "recall": 0.18104906937394247
+          },
+          "M1": {
+            "alert_rate": 0.050032428425831554,
+            "alerts": 540,
+            "precision": 0.6055555555555555,
+            "recall": 0.2766497461928934
+          },
+          "M1_F": {
+            "alert_rate": 0.050032428425831554,
+            "alerts": 540,
+            "precision": 0.5907407407407408,
+            "recall": 0.26988155668358715
+          }
+        },
+        "anchor_count": 10793,
+        "auc": {
+          "EWMA": 0.7476579201672646,
+          "M1": 0.7410068060409489,
+          "M1_F": 0.7289096619936863
+        },
+        "auc_intervals_95": {
+          "EWMA": [
+            0.6526379602878014,
+            0.8310504273541708
+          ],
+          "M1": [
+            0.6346683066413844,
+            0.8401243857093055
+          ],
+          "M1_F": [
+            0.622301622142778,
+            0.8303657677701353
+          ],
+          "delta_auc_M1_F": [
+            -0.024952850519534032,
+            0.0004345352580874044
+          ]
+        },
+        "bootstrap_draws_requested": 399,
+        "bootstrap_redraws": 0,
+        "bootstrap_replicates_used": 399,
+        "delta_auc_M1_F": -0.012097144047262587,
+        "event_clusters": 21,
+        "event_day_count": 1182,
+        "no_skill_auc": 0.5,
+        "status": "estimated"
+      },
+      "tier": "post_freeze_exploratory",
+      "variance_floor": 1e-08,
+      "variant": "zero_returns_missing",
+      "zero_as_missing": true
+    }
+  ]
+}

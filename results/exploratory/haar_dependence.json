@@ -1,0 +1,20 @@
+{
+  "autocorrelation": {
+    "effective_n": 49.68815473250671,
+    "integrated_autocorrelation_time": 287.9559540302168
+  },
+  "block_bootstrap_95_interval": [
+    0.035,
+    0.082
+  ],
+  "block_length_sessions": 250,
+  "bootstrap_replicates": 1000,
+  "construction": "For each date, the percentile is the fraction of frozen Haar reference angles no larger than the observed mean principal angle; inference resamples ordered dates in circular blocks.",
+  "date_count": 14308,
+  "extension_plan_sha256": "d4bf5aeb661a07860210f01fc384be0a25d8c4119d186ba018bb579c16f65ee6",
+  "mean_percentile": 0.12034029913335198,
+  "original_frozen_median_percentile": 0.059,
+  "recomputed_median_percentile": 0.059,
+  "reference_draws": 1000,
+  "tier": "post_freeze_exploratory"
+}

@@ -1,0 +1,32 @@
+{
+  "archive_sha256": "c20b1ccb5bc22b7137938854499f81c74a88694e95af224bf8d0189c0f846f34",
+  "derived_returns": "returns.csv",
+  "derived_returns_sha256": "cd1b005e90cb6beddd40e3b50c23c18041a4d1ed1216be6fe79e9e416057ee9b",
+  "labels": [
+    "Food",
+    "Mines",
+    "Oil",
+    "Clths",
+    "Durbl",
+    "Chems",
+    "Cnsum",
+    "Cnstr",
+    "Steel",
+    "FabPr",
+    "Machn",
+    "Cars",
+    "Trans",
+    "Utils",
+    "Rtail",
+    "Finan",
+    "Other"
+  ],
+  "member": "17_Industry_Portfolios_Daily.csv",
+  "member_sha256": "3e30b7e2a5ef30c42c090fba656d023d078fe96e092c6517332b58bd143e0cd7",
+  "redistribution": "The upstream archive is not included; its source terms remain applicable.",
+  "retrieval_utc": "2026-11-06T01:17:57+00:00",
+  "row_count": 26338,
+  "source": "Kenneth R. French Data Library",
+  "tier": "post_freeze_exploratory",
+  "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/17_Industry_Portfolios_daily_CSV.zip"
+}

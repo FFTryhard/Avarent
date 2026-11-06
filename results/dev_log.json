@@ -1,0 +1,110 @@
+{
+  "tier": "diagnostic",
+  "full_gate_attempts": 5,
+  "entries": [
+    {
+      "stage": "synthetic gate harness",
+      "outcome": "plumbing defect",
+      "detail": "The initial unit-gate call exposed a missing pybind11 STL conversion include before model thresholds were evaluated.",
+      "change": "Added the STL binding header and moved synthetic lambda selection ahead of real-data loading.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "attempt": 1,
+      "gate": "G1",
+      "outcome": "failed",
+      "detail": "The original synthetic map used equal off-diagonal coefficients, so the declared off-diagonal correlation statistic had no meaningful ground-truth variation.",
+      "change": "Made the planted off-diagonal coupling heterogeneous while keeping the diagonal dominant and thresholds fixed.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "attempt": 2,
+      "gate": "G1",
+      "outcome": "failed",
+      "detail": "The first heterogeneous coupling design produced a relative matrix error within threshold but off-diagonal structure correlation below threshold.",
+      "change": "Adjusted the synthetic recovery fixture to a higher signal-to-noise, still diagonally dominant map with spectral radius near 0.95; empirical thresholds and candidate lambdas were left fixed.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "attempt": 3,
+      "gate": "G1",
+      "outcome": "failed",
+      "detail": "The higher-magnitude positive coupling remained too collinear for the off-diagonal recovery correlation threshold.",
+      "change": "Replaced the planted coupling with small signed, zero-centered off-diagonal entries around a 0.95 diagonal, reducing shared-mode collinearity while preserving diagonal dominance and the target spectral radius.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "attempt": 4,
+      "outcome": "all gates passed",
+      "selected_lambda": 0.998,
+      "G1_relative_error": 0.03817640685099983,
+      "G1_off_diagonal_correlation": 0.8607661230643379,
+      "G4_median_rho": 0.9879796593107018,
+      "G4_median_F5": 1.0709603905237972,
+      "G4_maximum_F5": 1.3285505209311435,
+      "G4_direct_rls_relative_gap": 0.08328435763052892,
+      "plan_thresholds_changed": false
+    },
+    {
+      "stage": "pre-test key audit",
+      "outcome": "plumbing defect",
+      "detail": "The config-key audit found three gate settings missing from config.json, and the rebuilt loader exposed a missing datetime import before the full gate suite completed.",
+      "change": "Added the missing settings to config.json and analysis_plan.json, restored the date parser import, rebuilt the C++ extension, and verified the plan hash.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "attempt": 5,
+      "outcome": "all gates passed",
+      "selected_lambda": 0.998,
+      "G1_relative_error": 0.03817640685099983,
+      "G1_off_diagonal_correlation": 0.8607661230643379,
+      "G4_median_rho": 0.9879796593107018,
+      "G4_median_F5": 1.0709603905237972,
+      "G4_maximum_F5": 1.3285505209311435,
+      "G4_direct_rls_relative_gap": 0.08336898201384131,
+      "plan_thresholds_changed": false
+    },
+    {
+      "stage": "chronology deviation",
+      "outcome": "disclosed",
+      "detail": "Initial filesystem inventory displayed the archive's final rows before protocol freeze. An early gate-harness version also loaded the pre-test panel before completing synthetic lambda selection. No test-period aggregate, label, AUC, or model result was analyzed; the final test runner requires a verified protocol hash before reading derived returns.",
+      "change": "Added the deviation to the paper and owner sheet and reordered the final gate runner so synthetic lambda selection precedes its pre-test load.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "stage": "post-freeze execution",
+      "outcome": "implementation defect",
+      "detail": "The first full analysis invocation reached the event-placebo alignment output and stopped on an undefined onset variable before returning or writing study results. No result file or console output exposed an estimate.",
+      "change": "Indexed aligned observations from each cluster's first onset. The frozen placebo statistic, date range, thresholds, and verdict rules were unchanged.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "stage": "document generation",
+      "outcome": "reporting defect",
+      "detail": "After the complete study JSON files were written, the paper renderer expected the protocol digest in the parsed protocol object, while the frozen digest is stored in a separate hash record.",
+      "change": "The renderer now verifies the protocol file and attaches the digest from its checked hash record. No analysis results or definitions changed.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "stage": "direction interpretation",
+      "outcome": "reporting correction",
+      "detail": "Review of the completed Haar percentile found that the two tail descriptions were reversed in the text renderer.",
+      "change": "A low observed-angle percentile is now described as tighter alignment; a high percentile is described as greater separation. Numeric results are unchanged.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "stage": "reproducibility metadata",
+      "outcome": "reporting correction",
+      "detail": "The Visual Studio CMake generator did not expose the compiler ID and version in CMakeCache.txt, so the initial reproducibility record showed an empty compiler field.",
+      "change": "The exact MSVC and MSBuild versions and executable hashes were recorded from the configured toolchain. Analysis results are unchanged.",
+      "plan_thresholds_changed": false
+    },
+    {
+      "stage": "robustness summary",
+      "outcome": "implementation defect",
+      "detail": "The initial alternate-forgetting-factor summary reused the selected value when the selected value was the largest candidate.",
+      "change": "The robustness code now selects the other prespecified candidate, and its summary was recomputed at lambda 0.995. Primary H1 and H2 results are unchanged.",
+      "plan_thresholds_changed": false
+    }
+  ]
+}

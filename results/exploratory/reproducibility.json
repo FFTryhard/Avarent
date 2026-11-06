@@ -1,0 +1,32 @@
+{
+  "analysis_plan_sha256": "f6b3ebc6ed9598f5f3b88c8e742ba4ea7e2682245d04d757dc045ec778872647",
+  "block_length_extension_plan_sha256": "6fd373bd60d5857abe54ce6066fa2a073c37906422c85c2d09b4bd400be55338",
+  "completed_utc": "2026-11-06T02:36:30Z",
+  "core_binary_sha256": "73bfa47c9347ed3d0148492d9bdf16194da33d1df68ec51a827c7712b44b741b",
+  "core_source_sha256": "873d59d924e9711be31a6d2ddfd56dcd84402059b4cd4cc4d71badf33e303eb8",
+  "exploratory_script_sha256": "5d03c62d1f7ab342cc6697fa426431f0c965ea7f1ca62f66256d9d52d2eca9c2",
+  "frozen_analysis_plan_sha256": "7ea3f2c36f7150e3a13478dbfe6b7205e31d0934132d04eb6087935fe5688388",
+  "frozen_protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0",
+  "frozen_study_sha256": "732f6b8b15661ec9b176489c989b5ccba4c09d453d24597aee78c430cdc0d0ae",
+  "haar_dependence_extension_plan_sha256": "d4bf5aeb661a07860210f01fc384be0a25d8c4119d186ba018bb579c16f65ee6",
+  "precision_draws_per_F_test": 4999,
+  "precision_output_sha256": {
+    "f_surrogate_precision_comparison.json": "353db57bd795a5c2bb31e2830ea56f611451247116aa0c171fc3facaa4f6320e",
+    "lambda_grid.json": "34541764647afdc196e126f3cd94458cfc354ff20874e02b9ccffc9ddf8d4e02",
+    "primary_F_surrogate_precision.json": "00e87447b032b375f2720deebbf89a0921d8436445122608e9bd3f00c14788cb",
+    "subperiod_F_surrogate.json": "9a97dd778315972ddcd1713e89ea1dc2fba8f87e633cc7df99696c1ed7a0a297",
+    "zero_variants.json": "680477b57b1781a21916d3ac704f7bb91923ddca1f641c7194264b88bd18805f"
+  },
+  "precision_plan_sha256": "311a60d6715f6fe5551df3b8e4cd2f0f213d3717e46fbc877a53ac64448731ad",
+  "precision_run_completed_utc": "2026-11-06T04:21:43Z",
+  "precision_runner_sha256": "d41ea3e016e8134629a0508b18212fb54bf321ea2e0d3bae833b9eb956123a23",
+  "precision_seed_offsets": {
+    "floor_1e-6": 301,
+    "lambda_grid": 997,
+    "primary": 0,
+    "subperiods": 409,
+    "zeros_missing": 701
+  },
+  "secondary_data_snapshot_sha256": "f4ab0b1866a0484ff606645ec65f8ddad357a123e8c05cb22366d93edd8b0604",
+  "tier": "post_freeze_exploratory"
+}

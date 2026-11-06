@@ -1,0 +1,95 @@
+{
+  "primary_comparison": {
+    "alert_metric_intervals_95": {
+      "precision_M1": [
+        0.4035323491098567,
+        0.7361858088296893
+      ],
+      "precision_M1_F": [
+        0.38344309507286606,
+        0.7112400833617405
+      ],
+      "recall_M1": [
+        0.1729133114233215,
+        0.378184901439083
+      ],
+      "recall_M1_F": [
+        0.16849253170151435,
+        0.3659658992151672
+      ]
+    },
+    "alert_rate_5pct": {
+      "EWMA": {
+        "alert_rate": 0.050032428425831554,
+        "alerts": 540,
+        "precision": 0.3962962962962963,
+        "recall": 0.18104906937394247
+      },
+      "M1": {
+        "alert_rate": 0.050032428425831554,
+        "alerts": 540,
+        "precision": 0.6055555555555555,
+        "recall": 0.2766497461928934
+      },
+      "M1_F": {
+        "alert_rate": 0.050032428425831554,
+        "alerts": 540,
+        "precision": 0.587037037037037,
+        "recall": 0.26818950930626057
+      }
+    },
+    "anchor_count": 10793,
+    "auc": {
+      "EWMA": 0.7476579201672646,
+      "M1": 0.7410068060409489,
+      "M1_F": 0.7321908536485531
+    },
+    "auc_intervals_95": {
+      "EWMA": [
+        0.658737595803497,
+        0.8286170856118037
+      ],
+      "M1": [
+        0.6462538471080144,
+        0.8418494646631933
+      ],
+      "M1_F": [
+        0.6385885371419003,
+        0.8321208831487384
+      ],
+      "delta_auc_M1_F": [
+        -0.02267636138760946,
+        0.00292290304142669
+      ]
+    },
+    "bootstrap_draws_requested": 399,
+    "bootstrap_redraws": 0,
+    "bootstrap_replicates_used": 399,
+    "delta_auc_M1_F": -0.008815952392395854,
+    "event_clusters": 21,
+    "event_day_count": 1182,
+    "no_skill_auc": 0.5,
+    "status": "estimated"
+  },
+  "refit_aware": {
+    "auc_M1_F_interval_95": [
+      0.5855091743491097,
+      0.8293216110599109
+    ],
+    "auc_M1_interval_95": [
+      0.5915019403665019,
+      0.8366924089897086
+    ],
+    "delta_auc_M1_F_interval_95": [
+      -0.04267233333701624,
+      0.016776259771237933
+    ],
+    "failed_replicates": 0,
+    "method": "250-session circular blocks in the training history and test window; refit M1 and M1+F logistic models at every original expanding-window cutoff.",
+    "replicates_requested": 399,
+    "replicates_used": 399,
+    "scope_limit": "The state filter and RLS path are held fixed; this interval captures logistic fitting and test-block uncertainty, not upstream state-estimation uncertainty.",
+    "status": "estimated"
+  },
+  "tier": "post_freeze_exploratory"
+}

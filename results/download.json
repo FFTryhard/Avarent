@@ -1,0 +1,10 @@
+{
+  "archive_bytes": 934949,
+  "archive_sha256": "4c79bad80b6f4eee9d08e649ce223d1c51aadd65043b65baca50b54981d38d25",
+  "member_bytes": 4741344,
+  "member_name": "10_Industry_Portfolios_Daily.csv",
+  "member_sha256": "01cfe3d5e54f6ddfcc3dc84fb793f10f6b0218fe59f780969f4dca84e72e823e",
+  "retrieval_utc": "2026-11-05T22:41:44+00:00",
+  "tier": "diagnostic",
+  "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/10_Industry_Portfolios_daily_CSV.zip"
+}

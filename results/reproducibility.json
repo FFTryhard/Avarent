@@ -1,0 +1,23 @@
+{
+  "build_command": "cmake --build build --config Release",
+  "byte_for_byte_rebuild_verified": true,
+  "cmake": "cmake version 4.2.1",
+  "compiler": "unknown unknown",
+  "compiler_path": "unknown",
+  "cpp_standard": "C++17",
+  "eigen": "not used",
+  "executable_path": "python\\market_core.cp312-win_amd64.pyd",
+  "executable_sha256": "b0057ea8aa410408ff2ffad3d72940b08687d08bcf89b47f899f9acb71fca3de",
+  "matplotlib": "3.10.8",
+  "numpy": "2.3.5",
+  "pandas": "2.3.3",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "pybind11": "3.0.4",
+  "python": "3.12.0",
+  "python_abi": null,
+  "python_implementation": "CPython",
+  "rebuild_fingerprint_sha256": "759c7d5105defcd6ea5455ab5a6373883375ffdacf97fa3eda0079325add9b84",
+  "scikit_learn": "1.8.0",
+  "scipy": "1.16.3",
+  "tier": "frozen"
+}

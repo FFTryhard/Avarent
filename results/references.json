@@ -1,0 +1,11 @@
+{
+  "tier": "diagnostic",
+  "Julier": {"year": 2004},
+  "HRS": {"year": 1994},
+  "DavisKahan": {"year": 1970},
+  "Wedin": {"year": 1972},
+  "Kunsch": {"year": 1989},
+  "Roy": {"year": 2007},
+  "Kritzman": {"year": 2011},
+  "Scheffer": {"year": 2009}
+}

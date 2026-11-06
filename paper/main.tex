@@ -1,0 +1,231 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,array,booktabs,graphicx}
+\usepackage{placeins}
+\usepackage[hidelinks]{hyperref}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{10pt plus 2pt minus 3pt}
+\input{results}
+\input{tables}
+\input{exploratory}
+\title{A Returns-Only Audit of Market Fragility and Early Warning}
+\author{Harun Yahya G\"okay\\Independent Researcher\\\href{mailto:harunygokay@gmail.com}{harunygokay@gmail.com}\\\href{https://orcid.org/0009-0009-6109-6898}{ORCID: 0009-0009-6109-6898}}
+\date{Version 1.1 -- 6 November 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+I evaluate a fixed, returns-only audit of market-state summaries and a local susceptibility feature. Participation entropy stays near ten, so I find no strongly concentrated low-dimensional mode under this measure. Rotation is weak and near-degenerate, and Wedin's bound is informative on only 2.53\% of test dates. In the frozen analysis, $F$ is the only signal to survive the block-shuffle surrogate test (Holm-adjusted $p=0.006$). A post-freeze 4,999-shuffle rerun gives adjusted $p=0.0036$ under the frozen settings, but $p=0.0804$ with a $10^{-6}$ floor and $p=0.0306$ when exact-zero observations are treated as missing; the pre- and post-2000 adjusted values are $0.087$ and $0.0732$. Thus, $F$ survives under the frozen settings, but not under every alternative zero-handling or subperiod check. The observed median $F$ is below the shuffled null, indicating less amplification than in shuffled data. Adding $F$ to the richer forecasting baseline changes AUC by $-0.009$, with an adjusted upper interval bound of $0.004$, below the prespecified practical threshold of $0.02$. I therefore find H1 inconclusive under its joint rule and H2 unsupported.
+\end{abstract}
+
+\noindent\textbf{Keywords:} market fragility; drawdown forecasting; local Jacobian; principal angles; block bootstrap; reproducibility
+
+\noindent\textbf{Plain-language summary.} I asked whether statistics calculated from industry returns describe changing market conditions and whether a measure of local sensitivity improves warnings of severe drawdowns. One sensitivity measure differs from shuffled-return results, but it does not improve the out-of-sample forecast by a practically meaningful amount. I see this as a reason for further testing, not a trading claim.
+
+\section{Introduction}
+I test two claims. H1 proposes that market behavior is usefully represented by a state vector containing rotation $R_t$, participation entropy $H_t$, three stress summaries $\mathbf S_t$, and fragility $F_t$. H2 asks whether $F_t$ improves forecasts of severe drawdowns beyond stress and established early-warning features.
+
+I use daily value-weighted returns for ten U.S. industry portfolios from the Kenneth R. French Data Library. I form an equal-weighted portfolio from their simple returns for the drawdown target and market-level volatility. I estimate model parameters from \EstimationStart{} through \EstimationEnd, calibrate from \CalibrationStart{} through \CalibrationEnd, and test from \TestStart{} through \SampleEnd. This is one historical return path; I do not test a portfolio strategy or trading performance. I make the audit protocol and its reproducible negative forecast result the paper's main contribution.
+
+I relate the analysis to research on drawdown and crash forecasts \cite{DichtlCrash}, regime detection in time series \cite{Hamilton}, early-warning indicators and susceptibility \cite{Scheffer}, and market fragility measures \cite{Kritzman}. I use a predeclared comparison structure to reduce post hoc selection, while recognizing that a plan cannot remove modeling choices or low event counts \cite{CoffmanNiederle}. I measure local response in filtered returns; I do not identify a structural crisis mechanism.
+
+I make four contributions:
+\begin{itemize}
+\item I give a reproducible, returns-only audit that separates descriptive state measures from out-of-sample forecast value.
+\item I report signal-level surrogate and pre-onset results alongside the frozen joint H1 decision.
+\item I test whether local fragility adds AUC beyond two matched baselines and report the post-freeze sensitivity analyses separately.
+\item I release the implementation, frozen derived results, and analysis addendum with explicit data and file hashes.
+\end{itemize}
+I first describe the data, filter, local response map, and decision rules; I then report validation and frozen results, followed by the exploratory addendum, interpretation, limitations, and conclusion.
+
+\section{Method}
+\subsection{Data and filtering}
+I use daily value-weighted industry returns from the French Data Library. I convert each simple return $u_{i,t}$ to the continuously compounded value $r_{i,t}=\log(1+u_{i,t})$. The source uses designated missing-value codes; I exclude a date if any portfolio has a coded missing value. An exact zero simple return remains zero in the frozen analysis; its variance measurement is $\log c=-18.42$ when $c=10^{-8}$. I count 442 exact-zero cells among 69,430 portfolio-date cells in the 1926--1949 estimation window.
+
+I filter each industry's log variance $h_{i,t}$ with a diagonal Gaussian quasi-likelihood Kalman filter:
+\begin{equation}
+ h_{i,t}=\mu_i+\phi_i(h_{i,t-1}-\mu_i)+\eta_{i,t},\qquad
+ y_{i,t}=\log(r_{i,t}^{2}+c)=h_{i,t}+m+\xi_{i,t}.
+\end{equation}
+Here $c=\VarianceFloor$, $m=\LogChiMean$, and the variances of $\eta$ and $\xi$ are $q_i$ and $R_\xi=\ObservationVariance$. I use the known log-chi-square mean and Gaussian observation noise as a quasi-likelihood approximation \cite{HRS}. For the linear transition and observation, the unscented transform in the original prototype gives the same moments as the Kalman recursions; I use the direct recursions in C++ and verified their numerical equivalence \cite{Julier}.
+
+I estimate parameters only in the estimation window. For each date, I standardize filtered states using an expanding past-only mean and standard deviation, with floor \StandardFloor{} and clipping at plus or minus \StandardClip. The bounds, preprocessing rules, and date splits remain those in the frozen protocol.
+
+\subsection{Local susceptibility and state summaries}
+I fit an online recursive least-squares map with intercept and forgetting factor $\lambda=\SelectedLambda$:
+\begin{equation}
+ \mathbf z_{t+1}=g_t(\mathbf z_t),\qquad
+ J_t=\mathrm{D}g_t(\mathbf z_t)=\frac{\partial g_t(\mathbf z_t)}{\partial\mathbf z_t}.
+\end{equation}
+The Jacobian $J_t$ is the local derivative of the fitted map. For a small perturbation $\delta\mathbf z_t$, I use $\delta\mathbf z_{t+1}\approx J_t\delta\mathbf z_t$ as a first-order description: it asks how a small change in today's estimated market state would change the next fitted state. I define fragility at horizon $\PrimaryHorizon$ as $F_t=\lVert J_t^{\PrimaryHorizon}\rVert_2$. It measures the largest local amplification over that horizon. It is a statistical sensitivity measure, not a causal effect or a guarantee of future market behavior.
+
+I define rotation $R_t$ as the mean principal angle between leading right-singular subspaces of $J_t$ separated by $\RotationLag$ sessions. I define participation entropy as $H_t=\exp[-\sum_i p_{i,t}\log p_{i,t}]$, where $p_{i,t}=s_{i,t}^2/\sum_j s_{j,t}^2$. This effective mode count is invariant to rescaling $J_t$ and lies between one and the state dimension \cite{Roy}. A value near ten indicates that singular energy is not concentrated in a small number of modes; it does not establish that collective behavior is impossible.
+
+I summarize stress with annualized realized volatility, drawdown from the trailing peak, and past-relative average pairwise correlation. I also use an AR(1) coefficient and absorption ratio as established comparators \cite{Scheffer,Kritzman}. Funding, leverage, and liquidity are unavailable in this returns-only panel. For singular subspaces of the non-symmetric Jacobian I use Wedin's perturbation bound; I use Davis--Kahan for symmetric covariance matrices \cite{Wedin,DavisKahan}.
+
+\subsection{Forecast target and inference}
+I define an event as the first crossing of a drawdown of $\EventThreshold$ from the trailing peak. Crossings less than \MergeDays{} sessions apart form one cluster. A positive label marks an onset within the next \ForecastDays{} sessions, and I remove dates inside event clusters from the risk set. I compare $M_0=\mathbf S$, $M_0+F$, $M_1=(\mathbf S,\text{AR(1)},\text{absorption ratio})$, and $M_1+F$. I fit expanding logistic models with $C=\LogisticC$, refit every \RefitDays{} sessions, and purge the final \PurgeDays{} training dates.
+
+I call an anchor an out-of-sample risk date with an observed target and a prediction for every model in the comparison. My primary incremental statistic is $\Delta\mathrm{AUC}_1=\mathrm{AUC}(M_1+F)-\mathrm{AUC}(M_1)$. I use circular blocks of \BootstrapBlock{} sessions, about one trading year and longer than the \MergeDays-session event-cluster window, to retain low-frequency dependence in score-label pairs \cite{Kunsch}. This is a declared bandwidth rather than an optimized one; I compare 60-, 125-, and 250-session blocks in a separately planned post-freeze check. I adjust the two primary model comparisons with Holm's sequentially rejective procedure \cite{Holm}.
+
+I call H2 supported only when its adjusted lower interval is above zero and its point increment reaches \SupportThreshold. I call it unsupported when the adjusted upper interval is below that practical threshold; otherwise I call it inconclusive. Thus, an interval that includes zero can still rule out the prespecified practical improvement.
+
+\subsection{Frozen H1 decision rule}
+I evaluate four conditions together. Condition (a) requires all three Holm-adjusted block-shuffle probabilities for $R$, $H$, and $F$ to be at most \SurrogateThreshold. Condition (b) requires at least one Holm-adjusted pre-onset placebo probability below \EventPlaceboThreshold. Condition (c), redundancy, requires the maximum absolute Spearman correlation between $F$ and the observed stress features to be below 0.7. Condition (d), dimension, requires at least three principal components to explain 90\% of the standardized state vector's variance. I require all three signals to pass condition (a) because H1 concerns the full vector as a set of distinct state summaries; evidence for one component alone cannot establish that joint claim. I support H1 only if all four conditions pass. The protocol's unsupported rule is ``\HoneUnsupportedRule.'' I apply that rule literally: the joint H1 result is unsupported only when every adjusted block-shuffle probability is at least the pre-onset placebo threshold. I report per-signal findings even when the joint rule is inconclusive.
+
+\section{Validation and frozen results}
+\subsection{Implementation checks}
+I passed the declared numerical, estimator-recovery, synthetic-control, filtering, and pre-test checks before the protocol freeze. I summarize the gates in Table~\ref{tab:gates}; the supplement gives the full definitions and measured quantities. I retain the original frozen study output; later analyses are recorded separately.
+
+\begin{table}[!htbp]
+\centering
+\caption{Validation gates. I report measured values against thresholds fixed before the primary analysis.}
+\label{tab:gates}
+\small
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{2.45in}>{\raggedright\arraybackslash}p{1.8in}l@{}}
+\toprule
+Gate & Value & Threshold & Result \\
+\midrule
+\GateRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Directions and state summaries}
+I compare the leading covariance eigenspace with the leading susceptibility right-singular subspace. The observed directions are closer than most Haar reference subspaces: the median date-wise percentile is \DirectionPercentile{} across \DirectionDateCount{} dates. This describes alignment, not causation. Wedin's bound is informative on \WedinShare{} of dates.
+
+I account for serial dependence in the date-wise Haar percentiles with a 250-session circular-block bootstrap. I obtain \HaarDependenceSummary; the supplement also reports the factor-aligned null.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/direction.pdf}
+\caption{Histogram density across test dates for the mean principal angle. I show the Haar reference distribution and observed covariance-to-susceptibility angles ($n=\DirectionDateCount$ dates).}
+\label{fig:directions}
+\end{figure}
+
+I report six distinct summaries rather than combining them into one score. Figure~\ref{fig:state} shows the test-period paths. $H$ stays close to the ten-dimensional ceiling and changes little; $R$ varies but has no stable surrogate-exceeding evidence. In this analysis, $H$ is near-constant and $R$ is noise-dominated, which undercuts H1's premise that these summaries provide a useful set of distinct state signals. This pattern is consistent with a near-identity, highly persistent fitted $J$ (median $\rho\approx0.99$), whose singular values are close.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.84\linewidth]{figures/state.pdf}
+\caption{The six components of $\mathbf M_t$ over the out-of-sample period. Volatility is annualized; drawdown and correlation deviation are unitless.}
+\label{fig:state}
+\end{figure}
+
+\subsection{H1 signal and joint outcomes}
+I find that only $F$ passes the adjusted block-shuffle test: $p_R=\HoneAdjpR$, $p_H=\HoneAdjpH$, and $p_F=\HoneAdjpF$. For the pre-onset placebo, I report raw and Holm-adjusted probabilities side by side: $R$ is $(\HoneEventRawpR,\HoneEventAdjpR)$, $H$ is $(\HoneEventRawpH,\HoneEventAdjpH)$, and $F$ is $(\HoneEventRawpF,\HoneEventAdjpF)$. Holm adjustment caps all three large raw values at one; I do not interpret these adjusted values as evidence that the observed statistics equal their placebo medians.
+
+I find H1 \HoneVerdict{}. Condition (a) fails jointly because $R$ and $H$ do not meet the 0.01 surrogate threshold, although $F$ passes individually. Condition (b) fails because none of the adjusted pre-onset probabilities is below 0.05. Conditions (c) redundancy and (d) dimension pass. The frozen unsupported rule therefore does not apply, so the joint verdict remains inconclusive.
+
+Table~\ref{tab:h1-conditions} gives the four frozen condition values and rules.
+
+\begin{table}[!htbp]
+\centering
+\caption{Frozen H1 conditions and measured values. The pre-onset entries show raw/Holm-adjusted probabilities.}
+\label{tab:h1-conditions}
+\scriptsize
+\begin{tabular}{@{}p{0.95in}p{2.55in}p{1.7in}l@{}}
+\toprule
+Condition & Frozen result & Rule & Outcome \\
+\midrule
+\HoneRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/event_study.pdf}
+\caption{Median rotation, entropy, and fragility around each test-period event onset. I use the date alignment descriptively; it does not establish causality.}
+\label{fig:event}
+\end{figure}
+
+\subsection{H2 incremental prediction}
+I find H2 \HtwoVerdict{}. Table~\ref{tab:h2} reports both frozen model comparisons. For the richer baseline, adding $F$ changes AUC by \DeltaMOne, with adjusted interval [$\DeltaMOneLow$, $\DeltaMOneHigh$]. Its point estimate is negative, and the adjusted upper bound is below the practical threshold of 0.02. The test contains \EventClusters{} event clusters and \AnchorCount{} common anchors.
+
+In the post-freeze default forecast comparison, EWMA volatility alone reaches AUC $0.748$, at least as high as $M_1$ ($0.741$) and $M_1+F$ ($0.732$). In Table S4, at the $-10\%$ threshold and 60- and 120-session horizons, AUC falls below 0.5 for $M_1$, $M_1+F$, and EWMA. This may reflect the risk set: some high-volatility dates after an event can be labelled negative when no new onset falls within the forecast horizon. I treat this as a possible explanation, not a demonstrated cause.
+
+\begin{table}[!htbp]
+\centering
+\caption{Frozen incremental out-of-sample AUC. An anchor is a risk date with an observed label and a prediction for each model in its comparison; I use the common anchors for each pair.}
+\label{tab:h2}
+\small
+\begin{tabular}{@{}l>{\raggedright\arraybackslash}p{0.9in}>{\raggedright\arraybackslash}p{1.3in}lll@{}}
+\toprule
+Comparison & $\Delta$AUC & Adjusted interval & Holm $p$ & Clusters & Anchors \\
+\midrule
+\HtwoRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+I see several plausible reasons why adding $F$ could lower AUC: it may overfit incremental variation when severe events are few; it may be collinear with stress already represented in $M_1$; or it may move too slowly to help a model fit on a small number of event clusters. These are explanations to test, not conclusions established by this comparison.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/bootstrap.pdf}
+\caption{Frozen block-bootstrap distribution of the richer-baseline AUC increment. I mark the point estimate and practical threshold.}
+\label{fig:bootstrap}
+\end{figure}
+
+\FloatBarrier
+\section{Post-freeze exploratory addendum}
+After the protocol freeze, I wrote a separately hashed exploratory analysis plan and three separately hashed extensions, and I recorded each in the amendment log. I leave the primary analysis plan, protocol hash, and frozen study output unchanged. I use these additional analyses to assess sensitivity, not to revise the primary verdicts.
+
+I count exact zero returns by estimation, calibration, and test period. I compare the frozen $10^{-8}$ floor with a $10^{-6}$ floor and with a filter treatment that skips the measurement update when a return is exactly zero. I keep zero source returns in the equal-weight target and stress series. I summarize the period counts and both reruns in the supplement.
+
+For $F$, I rerun the primary, zero-treatment, subperiod, and forgetting-factor block-shuffle tests with \FPrecisionDraws{} draws per test. In the primary rerun, the observed median is \FPrimaryObserved{} versus a shuffled-null median of \FPrimaryNull{} (raw $p=\FPrimaryRawP$, Holm-adjusted $p=\FPrimaryHolmP$). The floor-$10^{-6}$ result is \FFloorObserved{} versus \FFloorNull{} (raw $p=\FFloorRawP$, Holm-adjusted $p=\FFloorHolmP$); with exact-zero observations treated as missing it is \FMissingObserved{} versus \FMissingNull{} (raw $p=\FMissingRawP$, Holm-adjusted $p=\FMissingHolmP$). The F surrogate result therefore depends on zero treatment: under the frozen $10^{-8}$ floor, $\log(0+c)=-18.42$ turns each exact zero into an extreme outlier. In both subperiods, the observed median is below the shuffled null: \FSubperiodSummary. The direction is lower amplification than shuffled data, not higher. These reruns show that $F$ survives under the frozen settings, but not under every alternative zero-handling or subperiod check.
+
+I supplement the Haar comparison with a factor-aligned null that fixes the leading covariance direction and randomizes the remaining directions in its orthogonal complement. I report block-bootstrap uncertainty and an autocorrelation-adjusted effective sample size for both the frozen Haar percentile and the factor-aligned percentile. The factor-aligned result is less extreme: I obtain \FactorAlignedMedianPercentile, compared with \HaarMedianPercentile{} for the frozen Haar reference. This suggests that part of the apparent alignment reflects the market's leading factor. Across $\lambda\in\{0.990,0.995,0.998,0.999\}$, the post-freeze Holm-adjusted $F$ probabilities are \FLambdaHolmSummary. The median scale of $F$ depends on $\lambda$: it ranges from \FScaleLambdaRange, so the selected-setting median of 1.08 is not an absolute level. I find the entropy ceiling robust, but the scale of rotation sensitive to the forgetting factor.
+
+For H2, I vary the drawdown threshold over $-10\%$, $-15\%$, and $-20\%$, the forecast horizon over 20, 60, and 120 sessions, and logistic $C$ over 0.1, 1, and 10. I report AUC levels and increments against a no-skill AUC of 0.5 and an EWMA-volatility-only baseline, along with precision and recall at a 5\% alert rate. A separate 399-replicate bootstrap resamples training blocks and refits the logistic models at the original expanding-window cutoffs; I hold the upstream filter and RLS path fixed. I also compare fixed-score interval bandwidths of 60, 125, and 250 sessions.
+
+Across the 27 H2 settings, I estimate a positive AUC increment in six cases, but no point estimate reaches the 0.02 practical threshold. The upper interval remains below 0.02 in 20 settings; seven settings leave that threshold inside the interval. I report those less decisive cases rather than treating the frozen negative result as universal across target definitions.
+
+For the frozen target and fitted scores, the fixed-score interval widens as the block length increases: I estimate intervals of $[-0.019,0.002]$, $[-0.020,0.003]$, and $[-0.021,0.005]$ for 60, 125, and 250 sessions. Each upper endpoint remains below 0.02.
+
+I repeat the analysis on the 17-industry daily panel as an aggregation check. I match 19 of its 22 test clusters to ten-industry events within 120 sessions (86.4\%). Its raw $F$ surrogate probability is 0.002 from 499 draws, while the primary $F$ probability is Holm-adjusted after the 4,999-draw rerun; these values are not comparable. Adding $F$ changes H2 AUC by $-0.024$ (95\% interval $[-0.052,-0.001]$), which excludes zero and indicates that $F$ hurts on this panel, across 10,288 anchors. The heavy event overlap adds little independent H2 event power, so I do not treat this as a replication. I found no daily developed ex-U.S. industry series in the official French Library industry tables; its daily developed ex-U.S. portfolios are sorted by size and book-to-market, so I do not present them as an industry panel \cite{French}. I report the exploratory results and their hashes in the supplement.
+
+\section{Discussion}
+I draw a narrow conclusion from the frozen analysis: $F$ survives the block-shuffle null, but it does not add practical forecast value under H2. Entropy is near-constant and rotation is noise-dominated; both findings undercut H1's premise. $F$ survives under the frozen settings, but not under every alternative zero-handling or subperiod check. The post-freeze checks show how the result responds to zero treatment, null construction, event definition, model penalty, time period, forgetting factor, and portfolio aggregation; none alters the original joint verdict.
+
+I interpret $F$ as a local sensitivity of a fitted response map. In future work, I could model a probability density over market states with a nonlinear drift and state-dependent diffusion, then use the Jacobian of the drift to describe local susceptibility. A nonlinear Fokker--Planck equation is one possible framework. I propose this only as a direction for later research; I do not estimate such a PDE here.
+
+\section{Limitations}
+\begin{itemize}
+\item I use one U.S. historical return source and only 21 frozen test-period event clusters. The 17-industry check reaggregates largely the same stock universe and does not supply independent international event power.
+\item My stress features omit funding, leverage, and liquidity. I forecast historical drawdowns and do not estimate a traded strategy or net performance.
+\item My refit-aware bootstrap resamples logistic training and test blocks but holds the filtered state and RLS path fixed, so it does not include all upstream estimation uncertainty.
+\item I disclose two access deviations: a final-row preview and pre-test data in an early lambda-selection harness. I saw no test-period aggregate or model result; I give the chronology in Supplementary Section~11.
+\item The French Library can revise historical return files. I record snapshot hashes and provide a downloader, but an updated archive may not reproduce the frozen snapshot.
+\end{itemize}
+
+\section{Conclusion}
+I find H1 inconclusive and H2 unsupported under the frozen decision rules. $F$ survives under the frozen settings, but not under every alternative zero-handling or subperiod check; adding it to the richer baseline does not achieve the prespecified practical AUC gain. Entropy stays near its ten-mode ceiling and rotation does not show robust surrogate evidence. The observed median $F$ is below the shuffled null, indicating less amplification than shuffled data. This audit therefore finds a setting-dependent local-sensitivity signal without evidence that it improves the selected drawdown forecasts.
+
+\section*{Declarations}
+\noindent\textbf{Funding.} I received no grant or external funding, and I did not seek funding for this project.\\
+\textbf{Competing interests.} I disclose that I first designed Avarent as a proprietary algorithm product for quantitative funds and later decommissioned the Avarent project.\\
+\textbf{AI assistance.} AI tools substantially assisted me with code, analysis scripts, and drafting. I developed the initial framework on paper and the C++ prototype, reviewed the code, analyses, and manuscript, and take responsibility for the reported methods and results.\\
+\textbf{Data and code availability.} I obtained the ten-industry data from the \href{https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html}{Kenneth R. French Data Library} (archive retrieved \RetrievalDate) and the 17-industry daily panel from the same Library (retrieved \SecondaryRetrievalDate). I provide scripts that fetch both archives from the repository root. I do not redistribute the upstream French archives; their source terms apply. My code is available at \url{https://github.com/FFTryhard/Avarent}. I license code under MIT and my paper, figures, and derived results under \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0}. I list SHA-256 hashes for the source archives, derived panels, frozen study file, analysis plans, protocol, and executable in the supplement's reproducibility section.\\
+\textbf{Disclaimer.} I do not provide investment advice and make no claim of trading performance.\\
+\textbf{Acknowledgments and ethics.} I acknowledge the Kenneth R. French Data Library. I use public portfolio-level market data and no human-subject or individual-level records.
+
+\FloatBarrier
+\begin{thebibliography}{20}
+\bibitem{Julier} Julier, S. J., and Uhlmann, J. K. (2004). Unscented filtering and nonlinear estimation. \emph{Proceedings of the IEEE}, 92(3), 401--422. doi:10.1109/JPROC.2003.823141.
+\bibitem{HRS} Harvey, A. C., Ruiz, E., and Shephard, N. (1994). Multivariate stochastic variance models. \emph{The Review of Economic Studies}, 61(2), 247--264. doi:10.2307/2297980.
+\bibitem{DavisKahan} Davis, C., and Kahan, W. M. (1970). The rotation of eigenvectors by a perturbation. III. \emph{SIAM Journal on Numerical Analysis}, 7(1), 1--46. doi:10.1137/0707001.
+\bibitem{Wedin} Wedin, P.-A. (1972). Perturbation bounds in connection with singular value decomposition. \emph{BIT Numerical Mathematics}, 12(1), 99--111. doi:10.1007/BF01932678.
+\bibitem{Kunsch} K\"unsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. \emph{The Annals of Statistics}, 17(3), 1217--1241. doi:10.1214/aos/1176347265.
+\bibitem{Holm} Holm, S. (1979). A simple sequentially rejective multiple test procedure. \emph{Scandinavian Journal of Statistics}, 6(2), 65--70. doi:10.2307/4615733.
+\bibitem{Roy} Roy, O., and Vetterli, M. (2007). The effective rank: a measure of effective dimensionality. In \emph{Proceedings of the 15th European Signal Processing Conference}, 606--610.
+\bibitem{Kritzman} Kritzman, M., Li, Y., Page, S., and Rigobon, R. (2011). Principal components as a measure of systemic risk. \emph{The Journal of Portfolio Management}, 37(4), 112--126. doi:10.3905/jpm.2011.37.4.112.
+\bibitem{Scheffer} Scheffer, M., et al. (2009). Early-warning signals for critical transitions. \emph{Nature}, 461(7260), 53--59. doi:10.1038/nature08227.
+\bibitem{Hamilton} Hamilton, J. D. (1989). A new approach to the economic analysis of nonstationary time series and the business cycle. \emph{Econometrica}, 57(2), 357--384. doi:10.2307/1912559.
+\bibitem{DichtlCrash} Dichtl, H., Drobetz, W., and Otto, T. (2023). Forecasting stock market crashes via machine learning. \emph{Journal of Financial Stability}, 65, 101099. doi:10.1016/j.jfs.2022.101099.
+\bibitem{CoffmanNiederle} Coffman, L. C., and Niederle, M. (2015). Pre-analysis plans have limited upside, especially where replications are feasible. \emph{Journal of Economic Perspectives}, 29(3), 81--98. doi:10.1257/jep.29.3.81.
+\bibitem{French} Kenneth R. French Data Library. Daily 10-industry and 17-industry portfolio returns. Retrieved \RetrievalDate{} and \SecondaryRetrievalDate. \url{https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html}.
+\end{thebibliography}
+\end{document}

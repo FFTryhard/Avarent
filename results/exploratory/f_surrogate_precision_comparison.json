@@ -1,0 +1,214 @@
+{
+  "draws_per_F_test": 4999,
+  "minimum_attainable_empirical_p": 0.0002,
+  "precision_plan_sha256": "311a60d6715f6fe5551df3b8e4cd2f0f213d3717e46fbc877a53ac64448731ad",
+  "previous_499_draw_values": {
+    "lambda_grid": {
+      "0.99": {
+        "draws": 499,
+        "holm_adjusted_p": 0.006,
+        "raw_p": 0.002
+      },
+      "0.995": {
+        "draws": 499,
+        "holm_adjusted_p": 0.012,
+        "raw_p": 0.004
+      },
+      "0.998": {
+        "draws": 499,
+        "holm_adjusted_p": 0.006,
+        "raw_p": 0.002
+      },
+      "0.999": {
+        "draws": 499,
+        "holm_adjusted_p": 0.006,
+        "raw_p": 0.002
+      }
+    },
+    "primary": {
+      "draws": 499,
+      "holm_adjusted_p": 0.006,
+      "raw_p": 0.002
+    },
+    "subperiods": {
+      "1970_1999": {
+        "draws": 499,
+        "holm_adjusted_p": 0.08,
+        "raw_p": 0.08
+      },
+      "2000_2026_09": {
+        "draws": 499,
+        "holm_adjusted_p": 0.06,
+        "raw_p": 0.03
+      }
+    },
+    "zero_variants": {
+      "variance_floor_1e-6": {
+        "draws": 499,
+        "holm_adjusted_p": 0.078,
+        "raw_p": 0.026
+      },
+      "zero_returns_missing": {
+        "draws": 499,
+        "holm_adjusted_p": 0.012,
+        "raw_p": 0.004
+      }
+    }
+  },
+  "rerun_F_values": {
+    "0.99": {
+      "draws": 4999,
+      "holm_adjusted_p": 0.0024000000000000002,
+      "null_median_F": 1.4120678712635375,
+      "observed_median_F": 1.355373021497054,
+      "p_R_H_F_holm": [
+        0.27,
+        0.204,
+        0.0024000000000000002
+      ],
+      "p_R_H_F_raw_used_for_Holm": [
+        0.27,
+        0.102,
+        0.0008
+      ],
+      "raw_p": 0.0008,
+      "reused_R_H_draws": 499,
+      "seed": 20262104
+    },
+    "0.995": {
+      "draws": 4999,
+      "holm_adjusted_p": 0.0078,
+      "null_median_F": 1.2412814861468988,
+      "observed_median_F": 1.1990327058730932,
+      "p_R_H_F_holm": [
+        0.92,
+        0.124,
+        0.0078
+      ],
+      "p_R_H_F_raw_used_for_Holm": [
+        0.92,
+        0.062,
+        0.0026
+      ],
+      "raw_p": 0.0026,
+      "reused_R_H_draws": 499,
+      "seed": 20262104
+    },
+    "0.998": {
+      "draws": 4999,
+      "holm_adjusted_p": 0.003,
+      "null_median_F": 1.1179621892868914,
+      "observed_median_F": 1.0803128600649363,
+      "p_R_H_F_holm": [
+        0.872,
+        0.962,
+        0.003
+      ],
+      "p_R_H_F_raw_used_for_Holm": [
+        0.436,
+        0.962,
+        0.001
+      ],
+      "raw_p": 0.001,
+      "reused_R_H_draws": 499,
+      "seed": 20262104
+    },
+    "0.999": {
+      "draws": 4999,
+      "holm_adjusted_p": 0.0006000000000000001,
+      "null_median_F": 1.0699537364626146,
+      "observed_median_F": 1.0300896568820659,
+      "p_R_H_F_holm": [
+        0.416,
+        0.502,
+        0.0006000000000000001
+      ],
+      "p_R_H_F_raw_used_for_Holm": [
+        0.208,
+        0.502,
+        0.0002
+      ],
+      "raw_p": 0.0002,
+      "reused_R_H_draws": 499,
+      "seed": 20262104
+    },
+    "1970_1999": {
+      "draws": 4999,
+      "end": "1999-12-31",
+      "holm_adjusted_p": 0.087,
+      "null_median_F": 1.0880216288209827,
+      "observed_median_F": 1.0641657871083932,
+      "raw_p": 0.087,
+      "seed": 20261516,
+      "start": "1970-01-01"
+    },
+    "2000_2026_09": {
+      "draws": 4999,
+      "end": "2026-09-30",
+      "holm_adjusted_p": 0.0732,
+      "null_median_F": 1.1386655406949848,
+      "observed_median_F": 1.0990147875911433,
+      "raw_p": 0.0366,
+      "seed": 20261516,
+      "start": "2000-01-01"
+    },
+    "primary": {
+      "draws": 4999,
+      "holm_adjusted_p": 0.0036,
+      "null_median_F": 1.1184385876458807,
+      "observed_median_F": 1.0803128600649363,
+      "p_R_H_F_holm": [
+        0.844,
+        0.984,
+        0.0036
+      ],
+      "p_R_H_F_raw_used_for_Holm": [
+        0.422,
+        0.984,
+        0.0012
+      ],
+      "raw_p": 0.0012,
+      "reused_R_H_draws": 499,
+      "seed": 20261107
+    },
+    "variance_floor_1e-6": {
+      "draws": 4999,
+      "holm_adjusted_p": 0.0804,
+      "null_median_F": 1.192204971566186,
+      "observed_median_F": 1.1596438590920943,
+      "p_R_H_F_holm": [
+        0.748,
+        0.98,
+        0.0804
+      ],
+      "p_R_H_F_raw_used_for_Holm": [
+        0.374,
+        0.98,
+        0.0268
+      ],
+      "raw_p": 0.0268,
+      "reused_R_H_draws": 499,
+      "seed": 20261408
+    },
+    "zero_returns_missing": {
+      "draws": 4999,
+      "holm_adjusted_p": 0.030600000000000002,
+      "null_median_F": 1.1223400757241353,
+      "observed_median_F": 1.0928888042654834,
+      "p_R_H_F_holm": [
+        1.0,
+        1.0,
+        0.030600000000000002
+      ],
+      "p_R_H_F_raw_used_for_Holm": [
+        0.618,
+        0.882,
+        0.0102
+      ],
+      "raw_p": 0.0102,
+      "reused_R_H_draws": 499,
+      "seed": 20261808
+    }
+  },
+  "tier": "post_freeze_exploratory"
+}

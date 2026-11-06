@@ -1,0 +1,292 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,array,booktabs,graphicx,longtable,placeins}
+\usepackage[hidelinks]{hyperref}
+\input{results}
+\input{tables}
+\input{exploratory}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\title{Supplement: Methods and Reproducibility Record}
+\author{Harun Yahya G\"okay}
+\date{Version 1.1 -- 6 November 2026}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Notation and forecast anchors}
+I use the notation in Table~\ref{tab:notation} throughout the paper and supplement. In the main paper's Table 2, an anchor is a risk date for which the target is observed and the compared models all provide an out-of-sample prediction. This common set makes each paired AUC comparison use the same dates.
+
+\begin{table}[ht]
+\centering
+\caption{Notation used in the analysis.}
+\label{tab:notation}
+\small
+\begin{tabular}{@{}lp{4.9in}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$r_{i,t}$ & Continuously compounded return for industry $i$ on date $t$. \\
+$h_{i,t}$ & Filtered log variance for industry $i$. \\
+$\mathbf z_t$ & Past-only standardized vector of filtered states. \\
+$g_t$ & Online fitted map from $\mathbf z_t$ to $\mathbf z_{t+1}$. \\
+$J_t=\mathrm{D}g_t$ & Jacobian, or local derivative, of the fitted map. \\
+$F_t$ & Largest singular-value amplification of $J_t$ over the primary horizon. \\
+$R_t$ & Mean rotation of the leading right-singular subspace. \\
+$H_t$ & Effective mode count from the normalized squared singular values. \\
+$\mathbf S_t$ & Three returns-only stress summaries. \\
+$M_0$, $M_1$ & Baseline feature sets; $M_1$ adds AR(1) and absorption ratio to $M_0$. \\
+$M_0+F$, $M_1+F$ & Corresponding feature sets with fragility added. \\
+$\Delta\mathrm{AUC}$ & AUC with $F$ minus AUC for the matching baseline. \\
+Anchor & A forecast risk date with an observed target and predictions for every model in the comparison. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Kalman filter and parameter estimation}
+I use a diagonal Gaussian quasi-likelihood filter for the log-variance state:
+\begin{align}
+ h_t^- &= \mu+\Phi(h_{t-1}-\mu), & P_t^-&=\Phi P_{t-1}\Phi^\top+Q,\\
+ \widehat y_t&=h_t^-+m, & S_t&=P_t^-+R_\xi,\\
+ K_t&=P_t^-S_t^{-1}, & h_t&=h_t^-+K_t(y_t-\widehat y_t),\\
+ P_t&=(I-K_t)P_t^-(I-K_t)^\top+K_tR_\xi K_t^\top.
+\end{align}
+I symmetrize the covariance after the Joseph update and use a fixed numerical jitter only if a Cholesky factorization requires it. I pass exponentials through a shared clamp; non-finite state or covariance values and state-bound violations stop the run.
+
+The original C++ prototype expressed this update with an unscented transform. Because both transition and observation are linear, its transformed moments equal the Kalman recursions. I use the direct Kalman update in the reported implementation and verified the equivalence numerically to $\UKFError$.
+
+I estimate $\mu_i$, $\phi_i$, and $q_i$ on the estimation window only. I minimize the Gaussian innovation quasi-likelihood for $y_{i,t}=\log(r_{i,t}^2+c)$, with the log-chi-square mean correction described in the main paper \cite{HRS}. I do not apply a moment-matching clip or post-fit floor. The zero-as-missing exploratory variant skips both the per-asset likelihood contribution and Kalman measurement update at exact zero returns; the filter still predicts the state and covariance forward on those dates.
+
+\section{Online response map and spectral summaries}
+I set $x_t=[1,\mathbf z_t^\top]^\top$ and estimate the response coefficients with recursive least squares and forgetting factor $\lambda$:
+\begin{align}
+ k_t&=P_{t-1}x_t/(\lambda+x_t^\top P_{t-1}x_t),\\
+ B_t&=B_{t-1}+(\mathbf z_{t+1}-B_{t-1}x_t)k_t^\top,\\
+ P_t&=(P_{t-1}-k_tx_t^\top P_{t-1})/\lambda.
+\end{align}
+I initialize $P_0=\RidgePrior{}I$, symmetrize each update, and check positive definiteness after burn-in. I use past-only expanding standardization and do not smooth before the primary RLS fit. Centered finite differences recover the linear reference map within $\FiniteDifferenceError$; they are a validation check, not a derivative of the fitted RLS map.
+
+For singular values $s_i$ of $J_t$, I set $p_i=s_i^2/\sum_js_j^2$ and $H_t=\exp(-\sum_i p_i\log p_i)$. Right-singular vectors describe input perturbations that receive the greatest local amplification; left-singular vectors describe output locations. I use eigenvalues for persistence and singular values for transient amplification in non-normal maps. For non-symmetric $J_t$, I use Wedin's singular-subspace perturbation bound \cite{Wedin}. For symmetric covariance matrices, I use Davis--Kahan \cite{DavisKahan}.
+
+\section{Events, forecasts, and block inference}
+I compound the equal-weight simple-return portfolio into a wealth index and measure drawdown from its trailing \PeakWindow-session peak. I merge crossings less than \MergeDays{} sessions apart. For an onset $t_j$, the target is one when an onset falls in the next \ForecastDays{} sessions; I remove event-cluster dates from the risk set. I scale each logistic feature using training data only, refit every \RefitDays{} sessions, and purge the final \PurgeDays{} training observations.
+
+I use 250-session circular blocks in the frozen AUC bootstrap because this is approximately one trading year and exceeds the 120-session event-merging window. This bandwidth preserves longer-run dependence in paired score-label observations; I did not choose it by optimizing the resulting interval. After freeze, I compare 60-, 125-, and 250-session blocks and report all three intervals in Table~\ref{tab:blocklength}. I use the stationary-observation bootstrap rationale of K\"unsch \cite{Kunsch}. Holm's step-down adjustment controls family-wise error across the two primary AUC comparisons \cite{Holm}.
+
+In the post-freeze refit-aware bootstrap, I draw training blocks available at each original cutoff, refit both $M_1$ and $M_1+F$ logistic models, draw blocks from the test period, and recompute AUC levels and their difference. I hold the upstream volatility filter and RLS path fixed, so these intervals capture logistic-fitting and test-block uncertainty but not all state-estimation uncertainty. The fixed-score block-length comparison below holds model scores fixed and isolates interval bandwidth.
+
+\section{Frozen signal results and zero-return checks}
+The pre-test gates appear once in main Table~1; I do not repeat that table here.
+The frozen pre-onset placebo probabilities are raw $p=(0.385,0.814,0.825)$ and Holm-adjusted $p=(1,1,1)$ for $(R,H,F)$. The adjusted values are capped at one because each raw probability is large. I do not interpret that correction as evidence that the observed statistics sit at their placebo medians.
+
+I count exact zero log-return cells by period in the ten-industry source. Table~\ref{tab:zeros} reports portfolio-date cells and dates with any zero. For an exact zero, the frozen variance measurement is $\log(0+c)=\log c=-18.42$ at $c=10^{-8}$; the adjusted $10^{-6}$ floor gives $-13.82$. The calibration period has the highest zero share (0.85\%); zeros remain a small fraction of observations in each period. I report two post-freeze treatments: replacing the frozen $10^{-8}$ variance floor with $10^{-6}$, and treating exact zero observations as missing for the per-asset filter update. In both treatments, I keep the original simple returns in the equal-weight drawdown target and stress variables.
+
+\begin{table}[ht]
+\centering
+\caption{Exact zero-return counts in the ten-industry panel.}
+\label{tab:zeros}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Period & Dates & Zero cells / cells & Zero share & Dates with a zero \\
+\midrule
+\ZeroCountRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Post-freeze zero-return sensitivity. I show Holm-adjusted block-shuffle $p$ values for $(R,H,F)$, the richer-baseline AUC increment, its paired 250-session interval, and the common test sample. $F$ uses 4,999 shuffles; the retained $R$ and $H$ raw probabilities use 499 shuffles and are Holm-adjusted with the new $F$ value.}
+\label{tab:zero-variants}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}lp{1.4in}rrrr@{}}
+\toprule
+Treatment & Adjusted $p_R,p_H,p_F$ & $\Delta$AUC & 95\% interval & Clusters & Anchors \\
+\midrule
+\ZeroVariantRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Factor-aligned direction null}
+I retain the frozen Haar subspace comparison and add a null that fixes the leading rolling-covariance eigenvector in every draw while sampling the remaining two orthonormal directions in its orthogonal complement. This asks whether the observed susceptibility space aligns unusually well after accounting for the market's leading covariance factor. I calculate date-wise angle percentiles and use circular 250-session blocks to summarize their dependence. I estimate the effective sample size from the integrated autocorrelation time rather than treating daily dates as independent. For the frozen Haar comparison, the median date-wise percentile is \HaarDependenceSummary. For the factor-aligned null, the median percentile and interval are \FactorAlignedSummary.
+
+\section{H2 levels, alerts, and sensitivity}
+For the frozen target and default feature definitions, I obtain a no-skill AUC of \HTwoNoSkillAUC, an EWMA-volatility-only AUC of \HTwoEWMAAUC{} with interval \HTwoEWMAInterval, an $M_1$ AUC of \HTwoMOneAUC{} with interval \HTwoMOneInterval, and an $M_1+F$ AUC of \HTwoMOneFAUC{} with interval \HTwoMOneFInterval. The paired increment is \HTwoDeltaAUC{} with interval \HTwoDeltaInterval{} across \HTwoAnchorCount{} common anchors.
+
+At a fixed 5\% alert rate, $M_1$ precision and recall are \HTwoPrecisionMOne{} and \HTwoRecallMOne; $M_1+F$ precision and recall are \HTwoPrecisionMOneF{} and \HTwoRecallMOneF; the EWMA-only values are \HTwoPrecisionEWMA{} and \HTwoRecallEWMA. I use the same alert-rate rule for all three models.
+
+I fit the full post-freeze grid over drawdown threshold, forecast horizon, and logistic penalty $C$. Table~\ref{tab:h2-grid} reports the event count, common anchors, AUC levels, incremental AUC, paired 250-session interval, and EWMA AUC for each setting. These estimates are exploratory and I report non-estimable configurations explicitly.
+
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{longtable}{@{}p{0.56in}p{0.54in}p{0.42in}p{0.48in}p{0.62in}p{0.62in}p{0.68in}p{0.58in}p{0.86in}p{0.55in}@{}}
+\caption{Post-freeze H2 sensitivity grid. Each row changes the drawdown threshold, forecast horizon, and $C$; intervals are paired circular-block intervals.}\label{tab:h2-grid}\\
+\toprule
+Drawdown & Horizon & $C$ & Events & Anchors & AUC $M_1$ & AUC $M_1+F$ & $\Delta$AUC & 95\% interval & EWMA AUC \\
+\midrule
+\endfirsthead
+\toprule
+Drawdown & Horizon & $C$ & Events & Anchors & AUC $M_1$ & AUC $M_1+F$ & $\Delta$AUC & 95\% interval & EWMA AUC \\
+\midrule
+\endhead
+\HTwoSensitivityRows
+\bottomrule
+\end{longtable}
+\normalsize
+\setlength{\tabcolsep}{6pt}
+
+\begin{table}[ht]
+\centering
+\caption{H2 interval sensitivity to the circular-block length. I use the same common anchors and fixed expanding-window scores for all rows.}
+\label{tab:blocklength}
+\small
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+Block length & AUC $M_1$ & AUC $M_1+F$ & $\Delta$AUC & 95\% interval \\
+\midrule
+\BlockLengthRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+The separate refit-aware analysis used \HTwoRefitReplicates{} successful 250-session resamples. Its 95\% intervals are \HTwoRefitMOneInterval{} for AUC $M_1$, \HTwoRefitMOneFInterval{} for AUC $M_1+F$, and \HTwoRefitDeltaInterval{} for their difference. I hold the filter and response-map paths fixed as described above.
+
+The intervals reported around the rounded point estimate $\Delta$AUC $=-0.00882$ differ by design. The frozen interval is Holm-adjusted and uses 1,000 250-session bootstrap replicates (seed 20261108); Table S4 reports unadjusted fixed-score intervals from 399 setting-specific replicates; Table S5 uses 399 fixed-score replicates with a seed that varies by block length. The refit-aware interval uses 399 replicates (seed 20261119) and refits the logistic models, so it captures a different source of uncertainty.
+
+\section{Subperiod and forgetting-factor checks}
+I compare the observed median $F$ with its block-shuffle null separately for 1970--1999 and 2000--2026. I adjust the two raw probabilities with Holm's procedure. Table~\ref{tab:subperiod} reports both periods even if either test is inconclusive.
+
+\begin{table}[ht]
+\centering
+\caption{Post-freeze subperiod fragility surrogate results. Each $F$ test uses 4,999 block shuffles; Holm adjustment is across the two periods.}
+\label{tab:subperiod}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Period & Observed median $F$ & Null median & Raw $p$ & Holm $p$ \\
+\midrule
+\SubperiodRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+I also recompute the full $R$, $H$, and $F$ summaries and their block-shuffle probabilities for $\lambda\in\{0.990,0.995,0.998,0.999\}$ while keeping parameters fixed at the primary estimation values. Table~\ref{tab:lambda} reports medians and Holm-adjusted probabilities for each value. Each $F$ test uses 4,999 block shuffles; the retained $R$ and $H$ raw probabilities use 499 shuffles and their Holm adjustments are recomputed with the new $F$ probability.
+
+\begin{table}[ht]
+\centering
+\caption{Forgetting-factor sensitivity with primary estimation parameters held fixed. Adjusted probabilities are ordered $(R,H,F)$; $F$ uses 4,999 draws and $R,H$ use retained 499-draw raw probabilities.}
+\label{tab:lambda}
+\small
+\begin{tabular}{@{}p{0.5in}p{1.15in}p{1.15in}p{1.2in}p{1.4in}@{}}
+\toprule
+$\lambda$ & Median $R$ [IQR] & Median $H$ [IQR] & Median $F$ [IQR] & Holm-adjusted $p_R,p_H,p_F$ \\
+\midrule
+\LambdaRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+Compared with the earlier 499-draw estimates, the Holm-adjusted $F$ probabilities change from 0.006 to 0.0036 for the primary setting, from 0.078 to 0.0804 for the $10^{-6}$ floor, and from 0.012 to 0.0306 for zeros-as-missing. The subperiod values change from 0.080/0.060 to 0.087/0.0732, and the lambda-grid values change from 0.006/0.012/0.006/0.006 to \FLambdaHolmSummary in increasing lambda order. Raw old and new probabilities, observed and null medians, seeds, and draw counts are preserved in the hashed precision-comparison result.
+
+\section{Spectral, robustness, and gate diagnostics}
+I report Wedin's perturbation diagnostics, the frozen $F_5$ distribution, and additional frozen robustness specifications. I define the pre-test gates with the fixed thresholds used in the main text.
+
+\begin{table}[ht]
+\centering
+\caption{Wedin perturbation diagnostics and the frozen test-period $F_5$ distribution.}
+\label{tab:wedin}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{2.0in}p{1.25in}p{2.9in}@{}}
+\toprule
+Diagnostic & Value & Meaning \\
+\midrule
+\DiagnosticRows
+\bottomrule
+\end{tabular}
+\setlength{\tabcolsep}{6pt}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Frozen robustness summaries. I report the EMA-before-RLS and $\tau=20$ rows along with the primary and alternate forgetting-factor summaries.}
+\label{tab:robustness}
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Specification & Median $R$ & Median $H$ & Median $F$ \\
+\midrule
+\RobustnessRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Definitions and fixed thresholds for the validation gates.}
+\label{tab:gate-definitions}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.35in}>{\raggedright\arraybackslash}p{2.1in}>{\raggedright\arraybackslash}p{3.75in}@{}}
+\toprule
+Gate & Purpose & Pass rule \\
+\midrule
+\GateDefinitionRows
+\bottomrule
+\end{tabular}
+\setlength{\tabcolsep}{6pt}
+\end{table}
+
+\section{Seventeen-industry aggregation check}
+I downloaded the daily 17-industry series from the same U.S. stock universe and used it as an aggregation check. \PanelSeventeenSummary{} I do not count this as an independent replication or as a meaningful increase in H2 event power. I found no daily developed ex-U.S. industry portfolio series in the French Library's industry tables; its available daily developed ex-U.S. portfolios are sorted by size and book-to-market, not by industry.
+
+\section{Deviations and amendments}\label{sec:deviations}
+I record the following implementation corrections and access deviations in my development log and protocol-amendment record. None changed a frozen threshold, statistic, or verdict.
+
+\begin{description}
+\item[G1 fixture correction.] My initial synthetic map used equal off-diagonal coefficients, so the declared off-diagonal correlation had no meaningful ground-truth variation. I replaced it with a heterogeneous fixture; after the first design remained too collinear, I used small signed, zero-centered off-diagonal coefficients around a 0.95 diagonal. I kept the thresholds and candidate forgetting factors fixed.
+\item[Event-placebo indexing.] My first complete analysis invocation stopped before writing results because the event-aligned profile code referenced an onset outside its loop scope. I corrected the offsets to index from each cluster's first onset. The placebo statistic, test-period dates, and inference rules did not change.
+\item[Alternate robustness row.] My initial robustness summary reused the selected forgetting factor as the alternate because the selected value was the largest candidate. I corrected the row to the other prespecified value, $\lambda=0.995$, and recomputed its summary. The primary H1 and H2 results are unchanged.
+\item[CMake compiler identification.] The Visual Studio generator omitted compiler ID and version from its cache. I recorded MSVC 19.50.35721.0 and MSBuild 18.0.5, with executable hashes, in the build-provenance correction record.
+\item[Final-row preview.] Before the freeze, my initial filesystem inventory displayed the final rows of the source archive. I disclose this access deviation; no test-period aggregate or model result was computed from that preview.
+\item[Early lambda harness.] An early gate-harness version loaded the pre-test panel before completing synthetic lambda selection. I did not analyze a test-period aggregate, label, AUC, or model result. The final runner completes synthetic selection first and verifies the frozen protocol hash before reading derived returns.
+\end{description}
+
+\section{Reproducibility record}
+I preserve the frozen protocol, analysis plan, validation, and study result. The exact SHA-256 for \texttt{results/study.json} is included in Table~\ref{tab:hashes}; that file contains derived states, diagnostics, model estimates, and summaries, not raw French Library return rows. I record the source archive, extracted member, derived log-return panel, frozen study, the exploratory plan and three hashed extensions, the protocol, precision-run outputs, amendment log, frozen executable, exploratory C++ source and binary, and exploratory analysis script hashes below. I do not include raw source archives in the repository.
+
+\begin{table}[ht]
+\centering
+\caption{Source and analysis artifact SHA-256 values.}
+\label{tab:hashes}
+\scriptsize
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{1.5in}>{\raggedright\arraybackslash}p{4.7in}@{}}
+\toprule
+Artifact & SHA-256 \\
+\midrule
+\HashRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+I built the implementation with \CompilerName and C++ \CppStandard, using CMake \CmakeVersion and pybind11 \PybindVersion. The Python environment used Python \PythonVersion, NumPy \NumpyVersion, and SciPy \ScipyVersion. I verified a byte-for-byte rebuild of the core. The F precision extension uses its own hashed plan and runner, and its outputs are listed above. I include clean-clone commands in the repository README.
+
+I use a 250-session block for the primary bootstrap because it spans about a trading year and exceeds the 120-session event-merging window; I report shorter block-length checks rather than selecting a more favorable bandwidth. The frozen verdicts remain unchanged in every post-freeze report.
+
+\FloatBarrier
+\begin{thebibliography}{16}
+\bibitem{Julier} Julier, S. J., and Uhlmann, J. K. (2004). Unscented filtering and nonlinear estimation. \emph{Proceedings of the IEEE}, 92(3), 401--422. doi:10.1109/JPROC.2003.823141.
+\bibitem{HRS} Harvey, A. C., Ruiz, E., and Shephard, N. (1994). Multivariate stochastic variance models. \emph{The Review of Economic Studies}, 61(2), 247--264. doi:10.2307/2297980.
+\bibitem{DavisKahan} Davis, C., and Kahan, W. M. (1970). The rotation of eigenvectors by a perturbation. III. \emph{SIAM Journal on Numerical Analysis}, 7(1), 1--46. doi:10.1137/0707001.
+\bibitem{Wedin} Wedin, P.-A. (1972). Perturbation bounds in connection with singular value decomposition. \emph{BIT Numerical Mathematics}, 12(1), 99--111. doi:10.1007/BF01932678.
+\bibitem{Kunsch} K\"unsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. \emph{The Annals of Statistics}, 17(3), 1217--1241. doi:10.1214/aos/1176347265.
+\bibitem{Holm} Holm, S. (1979). A simple sequentially rejective multiple test procedure. \emph{Scandinavian Journal of Statistics}, 6(2), 65--70. doi:10.2307/4615733.
+\bibitem{Roy} Roy, O., and Vetterli, M. (2007). The effective rank: a measure of effective dimensionality. In \emph{Proceedings of the 15th European Signal Processing Conference}, 606--610.
+\bibitem{Kritzman} Kritzman, M., Li, Y., Page, S., and Rigobon, R. (2011). Principal components as a measure of systemic risk. \emph{The Journal of Portfolio Management}, 37(4), 112--126. doi:10.3905/jpm.2011.37.4.112.
+\bibitem{Scheffer} Scheffer, M., et al. (2009). Early-warning signals for critical transitions. \emph{Nature}, 461(7260), 53--59. doi:10.1038/nature08227.
+\bibitem{French} Kenneth R. French Data Library. Daily 10-industry and 17-industry portfolio returns. Retrieved 5 and 6 November 2026. \url{https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html}.
+\end{thebibliography}
+\end{document}

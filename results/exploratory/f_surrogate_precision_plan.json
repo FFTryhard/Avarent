@@ -1,0 +1,28 @@
+{
+  "created_utc": "2026-11-06T03:04:40Z",
+  "status": "post-freeze exploratory precision extension",
+  "purpose": "Rerun the primary, zero-treatment, subperiod, and forgetting-factor F block-shuffle surrogate comparisons with enough draws to resolve probabilities around 0.01.",
+  "frozen_inputs": {
+    "study_sha256": "732f6b8b15661ec9b176489c989b5ccba4c09d453d24597aee78c430cdc0d0ae",
+    "protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0",
+    "analysis_plan_sha256": "7ea3f2c36f7150e3a13478dbfe6b7205e31d0934132d04eb6087935fe5688388"
+  },
+  "draws_per_test": 4999,
+  "random_seed_policy": "Continue each previously declared deterministic seed stream from its first draw; record the seed offsets and seed family in the result artifact. Retain the earlier 499-draw R and H raw probabilities, which remain valid, and recompute their Holm family adjustments jointly with the new F raw probability.",
+  "method": {
+    "shuffle": "Existing circular block-shuffle implementation, unchanged block length and test dates.",
+    "test": "Existing two-sided empirical F probability, with the existing plus-one correction; compute F5 directly from each fitted Jacobian path.",
+    "multiplicity": "Holm adjustment across the existing R and H raw probabilities and the new F raw probability within each primary, zero-treatment, and lambda comparison; Holm across the two prespecified subperiod F probabilities.",
+    "zero_treatments": ["variance floor 1e-6", "exact-zero observations treated as missing for the per-asset measurement update"],
+    "subperiods": [["1970-01-01", "1999-12-31"], ["2000-01-01", "2026-09-30"]],
+    "lambda_values": [0.99, 0.995, 0.998, 0.999]
+  },
+  "outputs": [
+    "results/exploratory/primary_F_surrogate_precision.json",
+    "results/exploratory/zero_variants.json",
+    "results/exploratory/subperiod_F_surrogate.json",
+    "results/exploratory/lambda_grid.json",
+    "results/exploratory/f_surrogate_precision_comparison.json"
+  ],
+  "scope_limit": "This extension updates only post-freeze surrogate p-value resolution and associated descriptive summaries. It does not alter the frozen result file, protocol, thresholds, analyses, or verdicts."
+}

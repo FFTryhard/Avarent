@@ -1,0 +1,84 @@
+{
+  "tier": "frozen",
+  "amendments": [
+    {
+      "protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0",
+      "event": "first full analysis invocation stopped before writing study result files",
+      "cause": "event-aligned profile construction referenced an onset variable outside its loop scope",
+      "correction": "each profile offset now indexes from its cluster's first onset",
+      "effect_on_frozen_definitions": "none; the same test-period date-only placebo statistic and inference rules are used",
+      "final_analysis_run": 2,
+      "maximum_real_runs": 3
+    },
+    {
+      "protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0",
+      "event": "paper generation stopped after the complete study results had been written",
+      "cause": "the renderer did not attach the digest from its separate hash record",
+      "correction": "the renderer now verifies and attaches the frozen digest before emitting macros",
+      "effect_on_frozen_definitions": "none; the change affects reporting only",
+      "final_analysis_run": 2,
+      "maximum_real_runs": 3
+    },
+    {
+      "protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0",
+      "event": "review corrected the wording for the Haar angle percentile",
+      "cause": "the low-percentile and high-percentile verbal descriptions were reversed",
+      "correction": "a low observed-angle percentile is described as tighter alignment, and a high percentile as greater separation",
+      "effect_on_frozen_definitions": "none; values and tests are unchanged",
+      "final_analysis_run": 2,
+      "maximum_real_runs": 3
+    },
+    {
+      "protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0",
+      "event": "build metadata review",
+      "cause": "the Visual Studio generator omitted the compiler ID and version from CMakeCache.txt",
+      "correction": "added MSVC 19.50.35721.0 and MSBuild 18.0.5 with executable hashes in a separate correction record",
+      "effect_on_frozen_definitions": "none; build provenance only",
+      "final_analysis_run": 2,
+      "maximum_real_runs": 3
+    },
+    {
+      "protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0",
+      "event": "alternative forgetting factor summary reviewed",
+      "cause": "the selected lambda was reused as the reported alternative when it was the largest declared candidate",
+      "correction": "the alternate now uses the other prespecified candidate, 0.995, and its summary was recomputed",
+      "effect_on_frozen_definitions": "none; primary H1 and H2 estimates and verdicts are unchanged",
+      "final_analysis_run": 2,
+      "maximum_real_runs": 3
+    }
+  ],
+  "post_freeze_addenda": [
+    {
+      "created_utc": "2026-11-06T01:13:05Z",
+      "status": "exploratory; not part of frozen protocol",
+      "analysis_plan": "results/exploratory/analysis_plan.json",
+      "analysis_plan_sha256": "f6b3ebc6ed9598f5f3b88c8e742ba4ea7e2682245d04d757dc045ec778872647",
+      "scope": "Raw versus Holm-adjusted placebo reporting; zero-return variants; factor-aligned direction null; H2 sensitivity grid, refit-aware uncertainty, EWMA and fixed-alert metrics; 17-industry aggregation check; F subperiod analysis; and lambda sensitivity.",
+      "effect_on_frozen_definitions": "none; the original analysis plan, protocol hash, primary results, and frozen verdicts are retained unchanged"
+    },
+    {
+      "created_utc": "2026-11-06T01:50:00Z",
+      "status": "exploratory; post-freeze extension",
+      "analysis_plan": "results/exploratory/block_length_extension_plan.json",
+      "analysis_plan_sha256": "6fd373bd60d5857abe54ce6066fa2a073c37906422c85c2d09b4bd400be55338",
+      "scope": "Compare paired H2 circular-bootstrap interval estimates using 60-, 125-, and 250-session blocks, with 399 replicates per length, as an exploratory bandwidth check.",
+      "effect_on_frozen_definitions": "none; the extension adds a sensitivity analysis and leaves frozen H2 estimates and verdict unchanged"
+    },
+    {
+      "created_utc": "2026-11-06T02:00:00Z",
+      "status": "exploratory; post-freeze extension",
+      "analysis_plan": "results/exploratory/haar_dependence_extension_plan.json",
+      "analysis_plan_sha256": "d4bf5aeb661a07860210f01fc384be0a25d8c4119d186ba018bb579c16f65ee6",
+      "scope": "Compute the original date-wise Haar percentile and add a 250-session circular-block interval and autocorrelation-adjusted effective sample size over 1000 replicates.",
+      "effect_on_frozen_definitions": "none; the extension summarizes serial-dependence uncertainty without changing the Haar draws, frozen statistic, or verdicts"
+    },
+    {
+      "created_utc": "2026-11-06T03:04:40Z",
+      "status": "exploratory; post-freeze precision extension",
+      "analysis_plan": "results/exploratory/f_surrogate_precision_plan.json",
+      "analysis_plan_sha256": "311a60d6715f6fe5551df3b8e4cd2f0f213d3717e46fbc877a53ac64448731ad",
+      "scope": "Rerun only F's primary, 1e-6 floor, zeros-as-missing, subperiod, and four-value lambda-grid block-shuffle comparisons with 4,999 draws. Retain existing valid R/H raw probabilities and recompute their Holm family adjustments with the new F probability.",
+      "effect_on_frozen_definitions": "none; this changes post-freeze Monte Carlo resolution only and does not alter frozen results, protocol, thresholds, or verdicts"
+    }
+  ]
+}

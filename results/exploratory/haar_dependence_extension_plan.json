@@ -1,0 +1,26 @@
+{
+  "created_utc": "2026-11-06T02:00:00Z",
+  "status": "post-freeze exploratory extension",
+  "parent_analysis_plan": "results/exploratory/analysis_plan.json",
+  "parent_analysis_plan_sha256": "f6b3ebc6ed9598f5f3b88c8e742ba4ea7e2682245d04d757dc045ec778872647",
+  "frozen_inputs": {
+    "primary_study_sha256": "732f6b8b15661ec9b176489c989b5ccba4c09d453d24597aee78c430cdc0d0ae",
+    "primary_protocol_sha256": "a860e120e56490bcfe14675241d33f5958929c0e78747a8da334c79c7fa311c0"
+  },
+  "analysis": {
+    "purpose": "Quantify the serial-dependence uncertainty in the frozen date-wise Haar percentile for the covariance-to-susceptibility angle.",
+    "statistic": "For each test date, compute the fraction of the frozen Haar reference angles no larger than the observed mean principal angle, then summarize the median date-wise percentile.",
+    "dependence_method": "Circular 250-session block bootstrap over the ordered date-wise percentiles, with 1000 replicates; estimate effective sample size from the integrated autocorrelation time using an initial positive-sequence truncation.",
+    "interpretation": "Exploratory uncertainty summary of the frozen Haar comparison. This extension does not change its observed statistic, null draws, or any primary verdict."
+  },
+  "primary_files_must_remain_unchanged": [
+    "results/study.json",
+    "results/analysis_plan.json",
+    "results/analysis_plan.sha256",
+    "results/protocol.json",
+    "results/protocol.sha256",
+    "results/protocol_hash.json",
+    "results/validation.json",
+    "results/reproducibility.json"
+  ]
+}

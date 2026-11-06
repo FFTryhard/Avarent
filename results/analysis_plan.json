@@ -1,0 +1,100 @@
+{
+  "tier": "frozen",
+  "protocol": "pre-analysis synthetic and pre-1970 validation",
+  "rules": {
+    "U_ukf_kf_abs_error_max": 1e-10,
+    "U_finite_difference_abs_error_max": 1e-9,
+    "E1_phi_abs_error_max": 0.05,
+    "E1_q_ratio_max": 2.0,
+    "E1_assets_pass_min": 8,
+    "G1_relative_frobenius_error_max": 0.35,
+    "G1_off_diagonal_correlation_min": 0.5,
+    "G2_rotation_contrast_min": 0.15,
+    "G2_amplification_contrast_min": 0.15,
+    "G3_rmse_improvement_min": 0.05,
+    "G4_median_rho_max": 1.05,
+    "G4_median_F5_max": 3.0,
+    "G4_max_F5_max": 1000.0,
+    "G4_direct_RLS_relative_gap_max": 0.5,
+    "G4_surrogate_distance": "reported",
+    "maximum_attempts": 5,
+    "maximum_real_runs": 3,
+    "burn_in_days": 252,
+    "ema_half_life_days": 10,
+    "standardization_floor": 0.05,
+    "standardization_clip": 6.0,
+    "covariance_window_days": 250,
+    "correlation_window_days": 60,
+    "direction_surrogate_draws": 1000,
+    "block_surrogate_draws": 499,
+    "row_shuffle_draws": 5,
+    "bootstrap_draws": 1000,
+    "event_placebo_draws": 1000,
+    "volatility_window_days": 20,
+    "drawdown_peak_window_days": 250,
+    "direction_rank": 3,
+    "pca_variance_share": 0.9,
+    "h1_max_abs_spearman": 0.7,
+    "h1_surrogate_adjusted_p": 0.01,
+    "h1_placebo_adjusted_p": 0.05,
+    "h2_support_point_threshold": 0.02,
+    "h2_confidence_level": 0.95,
+    "moderate_regime_percentile": 0.75,
+    "E1_simulation_rows": 12000,
+    "G3_simulation_rows": 12000,
+    "numerical_test_rows": [500, 5000],
+    "G2_stationary_rotation_max": 1e-10,
+    "event_threshold_robustness": [-0.2, -0.1],
+    "seeds": {
+      "main": 20261105,
+      "simulation": 20261106,
+      "surrogate": 20261107,
+      "bootstrap": 20261108,
+      "placebo": 20261109,
+      "haar": 20261110
+    },
+    "G1_simulation": {
+      "rows": 16000,
+      "mu": -8.0,
+      "diagonal_transition": 0.95,
+      "innovation_variance": 0.2,
+      "offdiagonal_uniform_range": [-0.035, 0.035],
+      "target_spectral_radius": 0.95
+    },
+    "parameter_estimation": {
+      "method": "bounded Gaussian quasi-likelihood",
+      "mu_bounds": [-30.0, 2.0],
+      "phi_bounds": [0.8, 0.999],
+      "q_bounds": [0.0001, 2.0]
+    },
+    "recursive_least_squares": {
+      "lambda_candidates": [0.995, 0.998],
+      "ridge_prior": 10.0,
+      "intercept": true,
+      "ema_before_rls": false
+    },
+    "events": {
+      "primary_drawdown": -0.15,
+      "robustness_drawdowns": [-0.2, -0.1],
+      "drawdown_peak_window_days": 250,
+      "merge_days": 120,
+      "forecast_days": 60,
+      "placebo_spacing_days": 120,
+      "event_placebo_period": "test period"
+    },
+    "bootstrap": {
+      "draws": 1000,
+      "block_days": 250,
+      "redraw_degenerate": true
+    },
+    "surrogates": {
+      "block_days": 60,
+      "draws": 499,
+      "row_shuffle_draws": 5,
+      "two_sided_plus_one": true
+    },
+    "horizons": [5, 20],
+    "event_thresholds": [-0.2, -0.15, -0.1],
+    "gate_changes": "thresholds may change only to correct a documented gate-code bug"
+  }
+}

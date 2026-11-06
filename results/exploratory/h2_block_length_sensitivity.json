@@ -1,0 +1,228 @@
+{
+  "extension_plan_sha256": "6fd373bd60d5857abe54ce6066fa2a073c37906422c85c2d09b4bd400be55338",
+  "method": "Paired circular blocks of score-label observations on the common out-of-sample anchor set; model fits remain the original expanding-window fits.",
+  "replicates_per_length": 399,
+  "results": [
+    {
+      "alert_metric_intervals_95": {
+        "precision_M1": [
+          0.41087180333278334,
+          0.7698929941926893
+        ],
+        "precision_M1_F": [
+          0.3829172941040195,
+          0.7545844872518934
+        ],
+        "recall_M1": [
+          0.1828005997230481,
+          0.37576061663758004
+        ],
+        "recall_M1_F": [
+          0.1784667971437409,
+          0.36217394924967755
+        ]
+      },
+      "alert_rate_5pct": {
+        "EWMA": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.3962962962962963,
+          "recall": 0.18104906937394247
+        },
+        "M1": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.6055555555555555,
+          "recall": 0.2766497461928934
+        },
+        "M1_F": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.587037037037037,
+          "recall": 0.26818950930626057
+        }
+      },
+      "anchor_count": 10793,
+      "auc": {
+        "EWMA": 0.7476579201672646,
+        "M1": 0.7410068060409489,
+        "M1_F": 0.7321908536485531
+      },
+      "auc_intervals_95": {
+        "EWMA": [
+          0.6683249909093217,
+          0.823072011473664
+        ],
+        "M1": [
+          0.6431345431098061,
+          0.8292644294681902
+        ],
+        "M1_F": [
+          0.6377934451511544,
+          0.8198086471058107
+        ],
+        "delta_auc_M1_F": [
+          -0.018945470238584068,
+          0.00227853692910508
+        ]
+      },
+      "block_length_sessions": 60,
+      "bootstrap_draws_requested": 399,
+      "bootstrap_redraws": 0,
+      "bootstrap_replicates_used": 399,
+      "delta_auc_M1_F": -0.008815952392395854,
+      "event_clusters": 21,
+      "event_day_count": 1182,
+      "no_skill_auc": 0.5,
+      "status": "estimated"
+    },
+    {
+      "alert_metric_intervals_95": {
+        "precision_M1": [
+          0.3885519741182085,
+          0.7303198130772882
+        ],
+        "precision_M1_F": [
+          0.3776451489686784,
+          0.7248096766796607
+        ],
+        "recall_M1": [
+          0.17484766462290016,
+          0.3867400222610908
+        ],
+        "recall_M1_F": [
+          0.16426943252265142,
+          0.37963022217346437
+        ]
+      },
+      "alert_rate_5pct": {
+        "EWMA": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.3962962962962963,
+          "recall": 0.18104906937394247
+        },
+        "M1": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.6055555555555555,
+          "recall": 0.2766497461928934
+        },
+        "M1_F": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.587037037037037,
+          "recall": 0.26818950930626057
+        }
+      },
+      "anchor_count": 10793,
+      "auc": {
+        "EWMA": 0.7476579201672646,
+        "M1": 0.7410068060409489,
+        "M1_F": 0.7321908536485531
+      },
+      "auc_intervals_95": {
+        "EWMA": [
+          0.654060081020465,
+          0.8307043917841209
+        ],
+        "M1": [
+          0.6235132338518231,
+          0.8435401273729768
+        ],
+        "M1_F": [
+          0.6169504576842421,
+          0.8311037782806519
+        ],
+        "delta_auc_M1_F": [
+          -0.020167099631218544,
+          0.003455985170176308
+        ]
+      },
+      "block_length_sessions": 125,
+      "bootstrap_draws_requested": 399,
+      "bootstrap_redraws": 0,
+      "bootstrap_replicates_used": 399,
+      "delta_auc_M1_F": -0.008815952392395854,
+      "event_clusters": 21,
+      "event_day_count": 1182,
+      "no_skill_auc": 0.5,
+      "status": "estimated"
+    },
+    {
+      "alert_metric_intervals_95": {
+        "precision_M1": [
+          0.3809483860658357,
+          0.7315642026422854
+        ],
+        "precision_M1_F": [
+          0.3610958485958486,
+          0.7225494651531897
+        ],
+        "recall_M1": [
+          0.17476660754631826,
+          0.3777515821441238
+        ],
+        "recall_M1_F": [
+          0.16134869205803212,
+          0.36043648751113844
+        ]
+      },
+      "alert_rate_5pct": {
+        "EWMA": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.3962962962962963,
+          "recall": 0.18104906937394247
+        },
+        "M1": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.6055555555555555,
+          "recall": 0.2766497461928934
+        },
+        "M1_F": {
+          "alert_rate": 0.050032428425831554,
+          "alerts": 540,
+          "precision": 0.587037037037037,
+          "recall": 0.26818950930626057
+        }
+      },
+      "anchor_count": 10793,
+      "auc": {
+        "EWMA": 0.7476579201672646,
+        "M1": 0.7410068060409489,
+        "M1_F": 0.7321908536485531
+      },
+      "auc_intervals_95": {
+        "EWMA": [
+          0.6518521282116265,
+          0.8371986686928856
+        ],
+        "M1": [
+          0.6330300157524948,
+          0.8496315020020125
+        ],
+        "M1_F": [
+          0.6203990181240758,
+          0.8367799345082855
+        ],
+        "delta_auc_M1_F": [
+          -0.02144492143932409,
+          0.005008518053172503
+        ]
+      },
+      "block_length_sessions": 250,
+      "bootstrap_draws_requested": 399,
+      "bootstrap_redraws": 0,
+      "bootstrap_replicates_used": 399,
+      "delta_auc_M1_F": -0.008815952392395854,
+      "event_clusters": 21,
+      "event_day_count": 1182,
+      "no_skill_auc": 0.5,
+      "status": "estimated"
+    }
+  ],
+  "scope_limit": "This bandwidth comparison resamples fixed scores and labels. The separate 250-session refit-aware bootstrap resamples training blocks and refits the logistic models.",
+  "tier": "post_freeze_exploratory"
+}

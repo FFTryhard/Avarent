@@ -1,0 +1,64 @@
+{
+  "10_industry": {
+    "calibration_1950_1969": {
+      "days": 5087,
+      "days_with_any_zero": 419,
+      "valid_cells": 50870,
+      "zero_cells": 433,
+      "zero_share": 0.00851189306074307
+    },
+    "estimation_1926_1949": {
+      "days": 6943,
+      "days_with_any_zero": 425,
+      "valid_cells": 69430,
+      "zero_cells": 442,
+      "zero_share": 0.006366124153823995
+    },
+    "test_1970_2026_09": {
+      "days": 14308,
+      "days_with_any_zero": 680,
+      "valid_cells": 143080,
+      "zero_cells": 701,
+      "zero_share": 0.0048993570030752024
+    }
+  },
+  "17_industry": {
+    "calibration_1950_1969": {
+      "days": 5087,
+      "days_with_any_zero": 616,
+      "valid_cells": 86479,
+      "zero_cells": 676,
+      "zero_share": 0.007816926652713375
+    },
+    "estimation_1926_1949": {
+      "days": 6943,
+      "days_with_any_zero": 580,
+      "valid_cells": 118031,
+      "zero_cells": 607,
+      "zero_share": 0.0051427167439062615
+    },
+    "test_1970_2026_09": {
+      "days": 14308,
+      "days_with_any_zero": 1027,
+      "valid_cells": 243236,
+      "zero_cells": 1081,
+      "zero_share": 0.00444424345080498
+    }
+  },
+  "count_definition": "Exact zero log returns after the source simple-return conversion; cells are portfolio-date observations.",
+  "periods": {
+    "calibration_1950_1969": {
+      "end": "1969-12-31",
+      "start": "1950-01-01"
+    },
+    "estimation_1926_1949": {
+      "end": "1949-12-31",
+      "start": "1926-01-01"
+    },
+    "test_1970_2026_09": {
+      "end": "2026-09-30",
+      "start": "1970-01-01"
+    }
+  },
+  "tier": "post_freeze_exploratory"
+}
